@@ -1,28 +1,41 @@
 # Python
 __pycache__/
 *.py[cod]
-*.sqlite3
-db.sqlite3
-db_backup.sqlite3
+*$py.class
+*.so
+.Python
 venv/
 env/
 ENV/
 
 # Django
+*.log
+db.sqlite3
+db_backup.sqlite3
+db_backup_before_redesign.sqlite3
+*.sqlite3
 media/
 staticfiles/
-*.log
 
 # Environment
 .env
+.env.local
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Node
 node_modules/
+package-lock.json
+
+# Backup files
+*.bak
+*.backup
