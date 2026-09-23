@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Barcode Label — {{ product.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 30px 20px;
+            background: #f4f6f9;
+            margin: 0;
+        }
+        .btn-bar {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0 5px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #64748b;
+            color: #fff;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        .label {
+            width: 420px;
+            padding: 25px;
+            background: #fff;
+            border: 2px dashed #333;
+            border-radius: 12px;
+            margin: 20px auto;
+            text-align: center;
+            page-break-after: always;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .label h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+        .label p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #555;
+        }
+        .label .barcode-img {
+            max-width: 100%;
+            height: auto;
+            margin: 15px 0;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .label .qr-img {
+            width: 130px;
+            height: 130px;
+            margin: 10px auto;
+            display: block;
+        }
+        .label .barcode-text {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+        .barcode-missing {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin: 15px 0;
+        }
+        .barcode-missing i {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .divider {
+            border-top: 1px dashed #cbd5e1;
+            margin: 15px 0;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .btn-bar { display: none; }
+            .label {
+                border: none;
+                box-shadow: none;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Buttons (not printed) -->
+<div class="btn-bar">
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer-fill"></i> Print Label
+    </button>
+    <a href="{% url 'regenerate_barcode_qr' product.id %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-clockwise"></i> Regenerate Codes
+    </a>
+    <a href="{% url 'inventory_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+
+<!-- Barcode Label -->
+<div class="label">
+    <h2>{{ product.name }}</h2>
+
+    <p><strong>SKU:</strong> {{ product.sku|default:"—" }}</p>
+    <p><strong>Price:</strong> ${{ product.price }}</p>
+    <p><strong>Category:</strong> {{ product.category.name|default:"Uncategorized" }}</p>
+
+    <div class="divider"></div>
+
+    {% if product.barcode %}
+        <!-- Barcode Image -->
+        <img src="{% url 'product_barcode' product.id %}" 
+             alt="Barcode"
+             class="barcode-img"
+             onerror="this.style.display='none'; document.getElementById('bc-error').style.display='block';">
+
+        <div class="barcode-text">{{ product.barcode }}</div>
+
+        <div id="bc-error" class="barcode-missing" style="display: none;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Barcode image could not be loaded.<br>
+            <a href="{% url 'regenerate_barcode_qr' product.id %}" style="color: #dc2626;">
+                Click here to regenerate
+            </a>
+        </div>
+    {% else %}
+        <div class="barcode-missing">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>No barcode assigned</strong><br>
+            <small>This product has no barcode yet.</small>
+            <br><br>
+            <a href="{% url 'regenerate_barcode_qr' product.id %}" 
+               class="btn btn-primary" 
+               style="font-size: 12px; padding: 8px 16px;">
+                <i class="bi bi-arrow-clockwise"></i> Generate Barcode
+            </a>
+        </div>
+    {% endif %}
+
+    {% if product.qr_code %}
+        <div class="divider"></div>
+        <img src="{% url 'product_qr' product.id %}" 
+             alt="QR Code"
+             class="qr-img">
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Scan for details</p>
+    {% endif %}
+</div>
+
+</body>
+</html>

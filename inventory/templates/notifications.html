@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-bell-fill text-primary"></i>
+                Notifications
+            </h2>
+            <p class="page-subtitle">{{ notifications|length }} notification(s).</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'dashboard' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            All Notifications
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if notifications %}
+            {% for n in notifications %}
+            <div style="display: flex; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; {% if not n.is_read %}background: #eff6ff;{% endif %}">
+                <div class="stat-icon" style="width: 46px; height: 46px; border-radius: 12px; font-size: 1.3rem; background: {% if not n.is_read %}#3b82f6{% else %}#f1f5f9{% endif %}; color: {% if not n.is_read %}#fff{% else %}#64748b{% endif %}; flex-shrink: 0;">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                        <strong style="color: #1e293b; font-size: 0.95rem;">{{ n.title }}</strong>
+                        {% if not n.is_read %}
+                            <span class="status-pill" style="background: #3b82f6; color: #fff; font-size: 0.65rem; padding: 3px 10px;">NEW</span>
+                        {% endif %}
+                    </div>
+                    <p style="color: #475569; font-size: 0.88rem; margin: 6px 0; line-height: 1.6;">{{ n.message }}</p>
+                    <small style="color: #94a3b8; font-size: 0.75rem;">
+                        <i class="bi bi-clock"></i> {{ n.created_at|date:"d M Y, H:i" }}
+                    </small>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state-inventory" style="padding: 100px 20px;">
+                <i class="bi bi-bell-slash"></i>
+                <h5>No Notifications</h5>
+                <p>You're all caught up!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

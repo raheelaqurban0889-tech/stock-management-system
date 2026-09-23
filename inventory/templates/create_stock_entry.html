@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}New Purchase Entry{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-plus-circle-fill text-primary"></i>
+                New Purchase Entry
+            </h2>
+            <p class="page-subtitle">Record stock received from supplier with cost details.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'stock_entries' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back to Entries
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="stockEntryForm">
+    {% csrf_token %}
+
+    <div class="form-card mb-3">
+        <div class="form-card-header">
+            <h5 class="form-card-title"><i class="bi bi-building text-primary"></i> Supplier Information</h5>
+        </div>
+        <div class="form-card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-building"></i> Supplier <span class="required">*</span></label>
+                        <select name="supplier" class="form-input-custom" required>
+                            <option value="">-- Select Supplier --</option>
+                            {% for s in suppliers %}
+                                <option value="{{ s.id }}">{{ s.company_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-receipt"></i> Purchase Invoice No</label>
+                        <input type="text" name="purchase_invoice_no" class="form-input-custom" placeholder="Auto-generated if blank">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-chat-left-text"></i> Notes</label>
+                        <input type="text" name="notes" class="form-input-custom" placeholder="Optional...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card mb-3">
+        <div class="form-card-header">
+            <h5 class="form-card-title"><i class="bi bi-box-seam-fill text-primary"></i> Products Received</h5>
+            <button type="button" class="btn-add-product" onclick="addRow()" style="padding: 8px 16px; font-size: 0.85rem;">
+                <i class="bi bi-plus-circle"></i> Add Product
+            </button>
+        </div>
+        <div class="form-card-body p-0">
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">Product</th>
+                            <th style="width: 12%;" class="text-center">Qty</th>
+                            <th style="width: 15%;" class="text-end">Unit Cost</th>
+                            <th style="width: 18%;" class="text-end">Subtotal</th>
+                            <th style="width: 10%;" class="text-center">—</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody"></tbody>
+                </table>
+            </div>
+            <div style="background: linear-gradient(135deg, #1e293b, #1e40af); color: #fff; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; opacity: 0.9;">
+                    <i class="bi bi-calculator"></i> Grand Total
+                </div>
+                <div style="font-family: monospace; font-size: 1.5rem; font-weight: 800; color: #93c5fd;" id="grandTotal">{{ currency_symbol }}0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 30px;">
+        <a href="{% url 'stock_entries' %}" class="btn-cancel"><i class="bi bi-x-circle"></i> Cancel</a>
+        <button type="submit" class="btn-save"><i class="bi bi-check-circle-fill"></i> Save Entry</button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const products = [
+    {% for p in products %}
+    { id: {{ p.id }}, name: "{{ p.name|escapejs }}", cost: {{ p.purchase_price|default:0 }}, sku: "{{ p.sku|default:'' }}" },
+    {% endfor %}
+];
+const currencySymbol = "{{ currency_symbol }}";
+
+function addRow() {
+    const tbody = document.getElementById('itemsBody');
+    const row = document.createElement('tr');
+    let options = '<option value="">-- Select Product --</option>';
+    products.forEach(p => {
+        options += `<option value="${p.id}" data-cost="${p.cost}">${p.name}${p.sku ? ' (' + p.sku + ')' : ''}</option>`;
+    });
+    row.innerHTML = `
+        <td style="padding: 12px 20px;">
+            <select name="product_id[]" class="form-input-custom product-select" required onchange="onProductChange(this)">${options}</select>
+        </td>
+        <td style="padding: 12px 20px;">
+            <input type="number" name="quantity[]" class="form-input-custom qty-input" value="1" min="1" required oninput="calculateRow(this)" style="text-align: center;">
+        </td>
+        <td style="padding: 12px 20px;">
+            <input type="number" name="unit_cost[]" class="form-input-custom cost-input" value="0" step="0.01" required oninput="calculateRow(this)" style="text-align: right;">
+        </td>
+        <td style="padding: 12px 20px; text-align: right;"><strong class="row-total" style="color: #059669;">${currencySymbol}0.00</strong></td>
+        <td style="padding: 12px 20px; text-align: center;">
+            <button type="button" class="action-btn action-danger" onclick="removeRow(this)"><i class="bi bi-trash-fill"></i></button>
+        </td>
+    `;
+    tbody.appendChild(row);
+}
+
+function onProductChange(select) {
+    const opt = select.options[select.selectedIndex];
+    const cost = parseFloat(opt.dataset.cost) || 0;
+    const row = select.closest('tr');
+    row.querySelector('.cost-input').value = cost.toFixed(2);
+    calculateRow(row.querySelector('.qty-input'));
+}
+
+function calculateRow(input) {
+    const row = input.closest('tr');
+    const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+    const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+    row.querySelector('.row-total').textContent = currencySymbol + (qty * cost).toFixed(2);
+    calculateAll();
+}
+
+function removeRow(btn) {
+    btn.closest('tr').remove();
+    calculateAll();
+}
+
+function calculateAll() {
+    let total = 0;
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+        total += qty * cost;
+    });
+    document.getElementById('grandTotal').textContent = currencySymbol + total.toFixed(2);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    addRow();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-boxes text-primary"></i>
+                Inventory Management
+            </h2>
+            <p class="page-subtitle">Manage your products, track stock levels, and control pricing.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'add_inventory' %}" class="btn-add-product">
+                <i class="bi bi-plus-circle-fill"></i> Add New Product
+            </a>
+            <a href="{% url 'stock_entries' %}" class="btn-secondary-action">
+                <i class="bi bi-truck"></i> Purchases
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Products</p>
+                <h3 class="stat-value">{{ total_products }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-stack"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Stock</p>
+                <h3 class="stat-value">{{ total_stock }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Low Stock</p>
+                <h3 class="stat-value">{{ low_stock_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-red">
+            <div class="stat-icon"><i class="bi bi-x-octagon-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Out of Stock</p>
+                <h3 class="stat-value">{{ out_of_stock_count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-search"></i> Search</label>
+            <input type="text" name="q" class="filter-input" placeholder="Search by name or SKU..." value="{{ query }}">
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-tag"></i> Category</label>
+            <select name="category" class="filter-select">
+                <option value="">All Categories</option>
+                {% for c in categories %}
+                    <option value="{{ c.id }}" {% if category_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-funnel"></i> Status</label>
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="available" {% if status_filter == 'available' %}selected{% endif %}>Available</option>
+                <option value="low" {% if status_filter == 'low' %}selected{% endif %}>Low Stock</option>
+                <option value="out" {% if status_filter == 'out' %}selected{% endif %}>Out of Stock</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter-apply"><i class="bi bi-funnel-fill"></i> Apply</button>
+            <a href="{% url 'inventory_list' %}" class="btn-filter-reset"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Products Table -->
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            Product List
+            <span class="products-count">{{ products|length }} items</span>
+        </h5>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'low_stock' %}" class="btn-secondary-action" style="padding: 6px 14px; font-size: 0.82rem;">
+                <i class="bi bi-exclamation-triangle"></i> Low Stock
+            </a>
+            <a href="{% url 'stock_history' %}" class="btn-secondary-action" style="padding: 6px 14px; font-size: 0.82rem;">
+                <i class="bi bi-clock-history"></i> History
+            </a>
+        </div>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if products %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">SKU</th>
+                            <th>Product</th>
+                            <th style="width: 130px;">Category</th>
+                            <th style="width: 100px;" class="text-end">Purchase</th>
+                            <th style="width: 100px;" class="text-end">Selling</th>
+                            <th style="width: 100px;" class="text-center">Stock</th>
+                            <th style="width: 130px;" class="text-center">Status</th>
+                            <th style="width: 180px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                        <tr>
+                            <td><span class="invoice-badge">{{ p.sku|default:"—" }}</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="stat-icon" style="width: 40px; height: 40px; font-size: 1.1rem; background: #eff6ff; color: #3b82f6;">
+                                        <i class="bi bi-box-seam"></i>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ p.name }}</strong>
+                                        {% if p.supplier %}
+                                            <small style="color: #64748b; display: block; font-size: 0.75rem;">
+                                                <i class="bi bi-building"></i> {{ p.supplier.company_name|truncatechars:20 }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if p.category %}
+                                    <span class="category-chip">{{ p.category.name }}</span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end"><span style="color: #64748b; font-family: monospace; font-weight: 600;">{{ currency_symbol }}{{ p.purchase_price }}</span></td>
+                            <td class="text-end"><span style="color: #059669; font-family: monospace; font-weight: 700;">{{ currency_symbol }}{{ p.price }}</span></td>
+                            <td class="text-center">
+                                <span class="qty-badge">{{ p.quantity }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if p.status == 'Available' %}
+                                    <span class="status-pill status-available"><i class="bi bi-check-circle-fill"></i> Available</span>
+                                {% elif p.status == 'Low Stock' %}
+                                    <span class="status-pill status-low"><i class="bi bi-exclamation-triangle-fill"></i> Low</span>
+                                {% else %}
+                                    <span class="status-pill status-out"><i class="bi bi-x-circle-fill"></i> Out</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="action-group">
+                                    <a href="{% url 'add_stock' p.id %}" class="action-btn action-success" title="Add Stock"><i class="bi bi-plus-lg"></i></a>
+                                    <a href="{% url 'edit_inventory' p.id %}" class="action-btn action-primary" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+                                    <a href="{% url 'print_barcode_labels' p.id %}" target="_blank" class="action-btn action-secondary" title="Print Barcode"><i class="bi bi-upc"></i></a>
+                                    <a href="{% url 'product_qr' p.id %}" target="_blank" class="action-btn action-secondary" title="View QR"><i class="bi bi-qr-code"></i></a>
+                                    {% if user.is_superuser %}
+                                        <a href="{% url 'delete_inventory' p.id %}" class="action-btn action-danger" title="Delete"><i class="bi bi-trash-fill"></i></a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-inbox"></i>
+                <h5>No Products Found</h5>
+                <p>Start by adding your first product to the system.</p>
+                <a href="{% url 'add_inventory' %}" class="btn-empty-action">
+                    <i class="bi bi-plus-circle"></i> Add Product
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

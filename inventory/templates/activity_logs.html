@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Activity Logs{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-clock-history text-primary"></i>
+                Activity Logs
+            </h2>
+            <p class="page-subtitle">Complete audit trail of all user actions.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'user_list' %}" class="btn-secondary-action">
+                <i class="bi bi-people"></i> Users
+            </a>
+            <a href="{% url 'backup_data' %}" class="btn-add-product">
+                <i class="bi bi-download"></i> Export Logs
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-list-check"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Logs</p>
+                <h3 class="stat-value">{{ total_logs }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-calendar-day"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Today</p>
+                <h3 class="stat-value">{{ today_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Active Users</p>
+                <h3 class="stat-value">{{ unique_users }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Modules</p>
+                <h3 class="stat-value">{{ modules|length }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-person-fill"></i> User</label>
+            <select name="user" class="filter-select">
+                <option value="">All Users</option>
+                {% for u in users %}
+                    <option value="{{ u.id }}" {% if user_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-grid-fill"></i> Module</label>
+            <select name="module" class="filter-select">
+                <option value="">All Modules</option>
+                {% for m in modules %}
+                    <option value="{{ m }}" {% if module == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-search"></i> Search</label>
+            <input type="text" name="q" class="filter-input" placeholder="Search actions..." value="{{ query|default:'' }}">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter-apply"><i class="bi bi-funnel-fill"></i> Apply</button>
+            <a href="{% url 'activity_logs' %}" class="btn-filter-reset"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            Activity Log
+            <span class="products-count">{{ logs|length }} records</span>
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if logs %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 180px;">Time</th>
+                            <th style="width: 180px;">User</th>
+                            <th style="width: 140px;" class="text-center">Module</th>
+                            <th>Action</th>
+                            <th style="width: 130px;" class="text-center">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ log.timestamp|date:"d M Y" }}</strong>
+                                <small style="color: #94a3b8; display: block; font-size: 0.72rem; font-family: monospace;">
+                                    <i class="bi bi-clock"></i> {{ log.timestamp|date:"H:i:s" }}
+                                </small>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="stat-icon" style="width: 38px; height: 38px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; color: #fff;
+                                        {% if log.user.is_superuser %}background: linear-gradient(135deg, #ef4444, #b91c1c);
+                                        {% elif log.user.is_staff %}background: linear-gradient(135deg, #10b981, #047857);
+                                        {% else %}background: linear-gradient(135deg, #06b6d4, #0e7490);{% endif %}">
+                                        {{ log.user.username|first|upper|default:"S" }}
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ log.user.username|default:"System"|truncatechars:18 }}</strong>
+                                        <small style="display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+                                            {% if log.user.is_superuser %}color: #dc2626;
+                                            {% elif log.user.is_staff %}color: #059669;
+                                            {% else %}color: #0891b2;{% endif %}">
+                                            {% if log.user.is_superuser %}Admin{% elif log.user.is_staff %}Manager{% else %}Salesman{% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if log.module == 'Sales' %}
+                                    <span class="status-pill" style="background: #eff6ff; color: #2563eb;"><i class="bi bi-receipt"></i> Sales</span>
+                                {% elif log.module == 'Inventory' %}
+                                    <span class="status-pill status-available"><i class="bi bi-boxes"></i> Inventory</span>
+                                {% elif log.module == 'Stock' %}
+                                    <span class="status-pill" style="background: #f5f3ff; color: #7c3aed;"><i class="bi bi-truck"></i> Stock</span>
+                                {% elif log.module == 'Returns' %}
+                                    <span class="status-pill status-low"><i class="bi bi-arrow-return-left"></i> Returns</span>
+                                {% elif log.module == 'Customers' %}
+                                    <span class="status-pill" style="background: #ecfeff; color: #0891b2;"><i class="bi bi-people"></i> Customers</span>
+                                {% elif log.module == 'Suppliers' %}
+                                    <span class="status-pill" style="background: #fdf4ff; color: #a21caf;"><i class="bi bi-building"></i> Suppliers</span>
+                                {% elif log.module == 'Authentication' %}
+                                    <span class="status-pill status-out"><i class="bi bi-shield-lock"></i> Auth</span>
+                                {% elif log.module == 'User Management' %}
+                                    <span class="status-pill" style="background: #fff7ed; color: #ea580c;"><i class="bi bi-person-gear"></i> Users</span>
+                                {% elif log.module == 'System' %}
+                                    <span class="status-pill" style="background: #f1f5f9; color: #475569;"><i class="bi bi-gear"></i> System</span>
+                                {% else %}
+                                    <span class="status-pill" style="background: #f1f5f9; color: #64748b;"><i class="bi bi-grid"></i> {{ log.module|default:"Other" }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="color: #334155; font-size: 0.88rem; line-height: 1.5;">{{ log.action }}</div>
+                            </td>
+                            <td class="text-center">
+                                {% if log.ip_address %}
+                                    <span style="font-family: monospace; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-weight: 600;">
+                                        <i class="bi bi-hdd-network" style="color: #3b82f6;"></i> {{ log.ip_address }}
+                                    </span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-journal-x"></i>
+                <h5>No Activity Logs</h5>
+                <p>No activity has been recorded yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

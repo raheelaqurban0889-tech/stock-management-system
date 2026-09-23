@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-person-gear text-primary"></i>
+                User Management
+            </h2>
+            <p class="page-subtitle">Manage users, roles, and permissions.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'create_staff' %}" class="btn-add-product">
+                <i class="bi bi-person-plus-fill"></i> Create User
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Users</p>
+                <h3 class="stat-value">{{ total_users }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-red">
+            <div class="stat-icon"><i class="bi bi-shield-fill-check"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Admins</p>
+                <h3 class="stat-value">{{ admin_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Managers</p>
+                <h3 class="stat-value">{{ manager_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-cyan">
+            <div class="stat-icon"><i class="bi bi-person-workspace"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Salesmen</p>
+                <h3 class="stat-value">{{ salesman_count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-search"></i> Search</label>
+            <input type="text" name="q" class="filter-input" placeholder="Username or email..." value="{{ query }}">
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-funnel"></i> Role</label>
+            <select name="role" class="filter-select">
+                <option value="">All Roles</option>
+                <option value="Admin" {% if role_filter == 'Admin' %}selected{% endif %}>Admin</option>
+                <option value="Manager" {% if role_filter == 'Manager' %}selected{% endif %}>Manager</option>
+                <option value="Salesman" {% if role_filter == 'Salesman' %}selected{% endif %}>Salesman</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter-apply"><i class="bi bi-funnel-fill"></i> Apply</button>
+            <a href="{% url 'user_list' %}" class="btn-filter-reset"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            User List
+            <span class="products-count">{{ users|length }} records</span>
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if users %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>User</th>
+                            <th style="width: 200px;">Email</th>
+                            <th style="width: 130px;" class="text-center">Role</th>
+                            <th style="width: 120px;" class="text-center">Status</th>
+                            <th style="width: 130px;">Joined</th>
+                            <th style="width: 100px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td><span class="row-num">{{ forloop.counter }}</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="stat-icon" style="width: 42px; height: 42px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; color: #fff;
+                                        {% if u.is_superuser %}background: linear-gradient(135deg, #ef4444, #b91c1c);
+                                        {% elif u.is_staff %}background: linear-gradient(135deg, #10b981, #047857);
+                                        {% else %}background: linear-gradient(135deg, #06b6d4, #0e7490);{% endif %}">
+                                        {{ u.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ u.username|truncatechars:22 }}</strong>
+                                        {% if u.first_name or u.last_name %}
+                                            <small style="color: #64748b; display: block; font-size: 0.78rem;">{{ u.first_name }} {{ u.last_name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if u.email %}
+                                    <span style="font-size: 0.85rem; color: #475569;">
+                                        <i class="bi bi-envelope-fill" style="color: #3b82f6;"></i> {{ u.email|truncatechars:26 }}
+                                    </span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if u.is_superuser %}
+                                    <span class="status-pill status-out"><i class="bi bi-shield-fill-check"></i> Admin</span>
+                                {% elif u.is_staff %}
+                                    <span class="status-pill status-available"><i class="bi bi-person-badge-fill"></i> Manager</span>
+                                {% else %}
+                                    <span class="status-pill" style="background: #ecfeff; color: #0891b2;"><i class="bi bi-person-workspace"></i> Salesman</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if u.is_active %}
+                                    <span class="status-pill status-available"><i class="bi bi-check-circle-fill"></i> Active</span>
+                                {% else %}
+                                    <span class="status-pill status-out"><i class="bi bi-x-circle-fill"></i> Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ u.date_joined|date:"d M Y" }}</strong>
+                                <small style="color: #94a3b8; display: block; font-size: 0.72rem;">{{ u.date_joined|date:"H:i" }}</small>
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'toggle_user_status' u.id %}"
+                                   class="action-btn {% if u.is_active %}action-warning{% else %}action-success{% endif %}"
+                                   title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}"
+                                   onclick="return confirm('Are you sure?');">
+                                    <i class="bi bi-{% if u.is_active %}pause-circle{% else %}play-circle{% endif %}"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-person-x"></i>
+                <h5>No Users Found</h5>
+                <p>Try changing filters.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

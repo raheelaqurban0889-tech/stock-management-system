@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-people-fill text-primary"></i>
+                Customer Management
+            </h2>
+            <p class="page-subtitle">Manage your customers and view their purchase history.</p>
+        </div>
+        <div class="page-header-actions">
+            <button class="btn-add-product" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                <i class="bi bi-person-plus-fill"></i> Add New Customer
+            </button>
+            <a href="{% url 'invoice_list' %}" class="btn-secondary-action">
+                <i class="bi bi-receipt"></i> Invoices
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Customers</p>
+                <h3 class="stat-value">{{ total_customers }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-person-check-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Active</p>
+                <h3 class="stat-value">{{ active_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Purchases</p>
+                <h3 class="stat-value">{{ currency_symbol }}{{ total_purchases|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-trophy-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Top Customer</p>
+                <h3 class="stat-value" style="font-size: 1.1rem;">{{ top_customer|truncatechars:14 }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-search"></i> Search</label>
+            <input type="text" name="q" class="filter-input" placeholder="Search by company, contact, or phone..." value="{{ query }}">
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-geo-alt"></i> City</label>
+            <select name="city" class="filter-select">
+                <option value="">All Cities</option>
+                {% for c in cities %}
+                    <option value="{{ c }}" {% if city_filter == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter-apply"><i class="bi bi-funnel-fill"></i> Apply</button>
+            <a href="{% url 'customers' %}" class="btn-filter-reset"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Customers Table -->
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            Customer List
+            <span class="products-count">{{ customers|length }} records</span>
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if customers %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Company / Contact</th>
+                            <th style="width: 220px;">Contact Info</th>
+                            <th style="width: 140px;">City</th>
+                            <th style="width: 140px;" class="text-end">Purchases</th>
+                            <th style="width: 120px;">Added</th>
+                            <th style="width: 160px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in customers %}
+                        <tr>
+                            <td><span class="row-num">{{ forloop.counter }}</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="stat-icon" style="width: 42px; height: 42px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #1e40af); color: #fff;">
+                                        {{ c.company_name|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ c.company_name|truncatechars:24 }}</strong>
+                                        {% if c.contact_person %}
+                                            <small style="color: #64748b; display: block; font-size: 0.78rem;">
+                                                <i class="bi bi-person"></i> {{ c.contact_person|truncatechars:20 }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    {% if c.phone %}
+                                        <span style="font-size: 0.85rem; color: #1e293b;">
+                                            <i class="bi bi-telephone-fill" style="color: #3b82f6;"></i> {{ c.full_phone }}
+                                        </span>
+                                    {% endif %}
+                                    {% if c.email %}
+                                        <small style="font-size: 0.75rem; color: #64748b;">
+                                            <i class="bi bi-envelope-fill" style="color: #3b82f6;"></i> {{ c.email|truncatechars:22 }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if c.city %}
+                                    <span class="category-chip"><i class="bi bi-geo-alt-fill"></i> {{ c.city }}</span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if c.total_purchases > 0 %}
+                                    <span class="amount-badge">{{ currency_symbol }}{{ c.total_purchases|floatformat:2 }}</span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ c.created_at|date:"d M Y" }}</strong>
+                            </td>
+                            <td class="text-center">
+                                <div class="action-group">
+                                    <a href="{% url 'customer_detail' c.id %}" class="action-btn action-primary" title="View"><i class="bi bi-eye-fill"></i></a>
+                                    <a href="{% url 'edit_customer' c.id %}" class="action-btn action-secondary" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+                                    {% if user.is_superuser %}
+                                        <a href="{% url 'delete_customer' c.id %}" class="action-btn action-danger" title="Delete"><i class="bi bi-trash-fill"></i></a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-people"></i>
+                <h5>No Customers Yet</h5>
+                <p>Start by adding your first customer.</p>
+                <button class="btn-empty-action" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                    <i class="bi bi-person-plus-fill"></i> Add Customer
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus-fill"></i> Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'customers' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-building"></i> Company Name <span class="required">*</span></label>
+                                <input type="text" name="company_name" class="form-input-custom" placeholder="e.g., ABC Trading LLC" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-person"></i> Contact Person</label>
+                                <input type="text" name="contact_person" class="form-input-custom" placeholder="Optional">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-globe"></i> Country Code <span class="required">*</span></label>
+                                <select name="country_code" class="form-input-custom">
+                                    <option value="+92">🇵🇰 Pakistan (+92)</option>
+                                    <option value="+971">🇦🇪 UAE (+971)</option>
+                                    <option value="+966">🇸🇦 Saudi (+966)</option>
+                                    <option value="+974">🇶🇦 Qatar (+974)</option>
+                                    <option value="+965">🇰🇼 Kuwait (+965)</option>
+                                    <option value="+1">🇺🇸 USA (+1)</option>
+                                    <option value="+44">🇬🇧 UK (+44)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-telephone-fill"></i> Phone <span class="required">*</span></label>
+                                <input type="text" name="phone" class="form-input-custom" placeholder="e.g., 300 1234567" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-envelope-fill"></i> Email</label>
+                                <input type="email" name="email" class="form-input-custom" placeholder="info@company.com">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-geo-alt-fill"></i> City</label>
+                                <input type="text" name="city" class="form-input-custom" placeholder="e.g., Lahore">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-globe2"></i> Country</label>
+                                <input type="text" name="country" class="form-input-custom" value="Pakistan">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-card-text"></i> TRN (Tax Reg #)</label>
+                                <input type="text" name="trn" class="form-input-custom" placeholder="Optional">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-house-fill"></i> Address</label>
+                                <textarea name="address" class="form-input-custom" rows="2" placeholder="Full address..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancel</button>
+                    <button type="submit" class="btn-save"><i class="bi bi-check-circle-fill"></i> Add Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

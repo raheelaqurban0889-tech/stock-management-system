@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Search: {{ query }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-search text-primary"></i>
+                Search Results
+            </h2>
+            <p class="page-subtitle">Results for: "<strong>{{ query }}</strong>"</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'dashboard' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Products -->
+    <div class="col-lg-4">
+        <div class="form-card h-100">
+            <div class="form-card-header" style="background: linear-gradient(135deg, #3b82f6, #1e40af); border-bottom: none;">
+                <h5 class="form-card-title" style="color: #fff;">
+                    <i class="bi bi-boxes"></i> Products
+                    <span class="products-count" style="background: rgba(255,255,255,0.2); color: #fff;">{{ results.products|length }}</span>
+                </h5>
+            </div>
+            <div class="form-card-body p-0">
+                {% for p in results.products %}
+                    <a href="{% url 'edit_inventory' p.id %}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; text-decoration: none; transition: background 0.2s;">
+                        <div>
+                            <strong style="color: #1e293b; display: block;">{{ p.name }}</strong>
+                            <small style="color: #64748b; font-family: monospace; font-size: 0.75rem;">{{ p.sku|default:"—" }}</small>
+                        </div>
+                        <span class="status-pill {% if p.quantity <= 0 %}status-out{% elif p.quantity <= p.low_stock_threshold %}status-low{% else %}status-available{% endif %}">
+                            {{ p.quantity }}
+                        </span>
+                    </a>
+                {% empty %}
+                    <div class="empty-state-small" style="padding: 40px 20px;">
+                        <i class="bi bi-inbox"></i>
+                        <p>No products found</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers -->
+    <div class="col-lg-4">
+        <div class="form-card h-100">
+            <div class="form-card-header" style="background: linear-gradient(135deg, #10b981, #047857); border-bottom: none;">
+                <h5 class="form-card-title" style="color: #fff;">
+                    <i class="bi bi-people"></i> Customers
+                    <span class="products-count" style="background: rgba(255,255,255,0.2); color: #fff;">{{ results.customers|length }}</span>
+                </h5>
+            </div>
+            <div class="form-card-body p-0">
+                {% for c in results.customers %}
+                    <a href="{% url 'customer_detail' c.id %}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; text-decoration: none; transition: background 0.2s;">
+                        <div>
+                            <strong style="color: #1e293b; display: block;">{{ c.company_name }}</strong>
+                            <small style="color: #64748b; font-size: 0.75rem;">{{ c.full_phone }}</small>
+                        </div>
+                        <span class="amount-badge" style="font-size: 0.8rem;">{{ currency_symbol }}{{ c.total_purchases|floatformat:0 }}</span>
+                    </a>
+                {% empty %}
+                    <div class="empty-state-small" style="padding: 40px 20px;">
+                        <i class="bi bi-inbox"></i>
+                        <p>No customers found</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices -->
+    <div class="col-lg-4">
+        <div class="form-card h-100">
+            <div class="form-card-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-bottom: none;">
+                <h5 class="form-card-title" style="color: #fff;">
+                    <i class="bi bi-receipt"></i> Invoices
+                    <span class="products-count" style="background: rgba(255,255,255,0.2); color: #fff;">{{ results.invoices|length }}</span>
+                </h5>
+            </div>
+            <div class="form-card-body p-0">
+                {% for inv in results.invoices %}
+                    <a href="{% url 'invoice_detail' inv.id %}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; text-decoration: none; transition: background 0.2s;">
+                        <div>
+                            <strong style="color: #1e293b; display: block;">{{ inv.invoice_number }}</strong>
+                            <small style="color: #64748b; font-size: 0.75rem;">{{ inv.customer.company_name|default:inv.customer_name|default:"Walk-in"|truncatechars:20 }}</small>
+                        </div>
+                        <span class="amount-badge" style="font-size: 0.8rem;">{{ currency_symbol }}{{ inv.grand_total|floatformat:0 }}</span>
+                    </a>
+                {% empty %}
+                    <div class="empty-state-small" style="padding: 40px 20px;">
+                        <i class="bi bi-inbox"></i>
+                        <p>No invoices found</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

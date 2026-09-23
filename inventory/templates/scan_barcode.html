@@ -1,0 +1,895 @@
+{% extends 'base.html' %}
+{% block title %}Barcode Scanner{% endblock %}
+
+{% block content %}
+<!-- ============================================================
+     PAGE HEADER
+     ============================================================ -->
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-upc-scan text-primary"></i>
+                Barcode / QR Scanner
+            </h2>
+            <p class="page-subtitle">
+                Scan barcodes with your camera or enter manually to find products instantly.
+            </p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'inventory_list' %}" class="btn-secondary-action">
+                <i class="bi bi-boxes"></i> Inventory
+            </a>
+            <a href="{% url 'add_inventory' %}" class="btn-add-product">
+                <i class="bi bi-plus-circle-fill"></i> Add Product
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATS BAR
+     ============================================================ -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="sc-stat-card sc-stat-blue">
+            <div class="sc-stat-icon"><i class="bi bi-upc"></i></div>
+            <div class="sc-stat-content">
+                <p class="sc-stat-label">Total Scans</p>
+                <h3 class="sc-stat-value">{{ total_scans|default:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="sc-stat-card sc-stat-green">
+            <div class="sc-stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="sc-stat-content">
+                <p class="sc-stat-label">Found Today</p>
+                <h3 class="sc-stat-value">{{ today_scans|default:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="sc-stat-card sc-stat-purple">
+            <div class="sc-stat-icon"><i class="bi bi-upc-scan"></i></div>
+            <div class="sc-stat-content">
+                <p class="sc-stat-label">Supported</p>
+                <h3 class="sc-stat-value" style="font-size:1.1rem;">Code128, EAN, UPC</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="sc-stat-card sc-stat-yellow">
+            <div class="sc-stat-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div class="sc-stat-content">
+                <p class="sc-stat-label">Speed</p>
+                <h3 class="sc-stat-value" style="font-size:1.1rem;">~2 seconds</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     MAIN LAYOUT
+     ============================================================ -->
+<div class="row g-3">
+
+    <!-- ========================================================
+         LEFT: Scanner
+         ======================================================== -->
+    <div class="col-lg-5">
+
+        <!-- Manual Entry Card -->
+        <div class="scanner-card mb-3">
+            <div class="scanner-card-header blue">
+                <i class="bi bi-keyboard-fill"></i>
+                <span>Manual Entry</span>
+            </div>
+            <div class="scanner-card-body">
+                <form method="post" id="manualForm">
+                    {% csrf_token %}
+                    <label class="form-label-custom">
+                        <i class="bi bi-upc"></i> Enter Barcode / SKU
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="bi bi-upc-scan"></i>
+                        <input type="text" name="barcode" id="barcodeInput"
+                               class="input-modern" placeholder="Scan or type barcode..."
+                               autofocus autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="btn-scan-primary mt-3">
+                        <i class="bi bi-search"></i> Search Product
+                    </button>
+                </form>
+
+                {% if error %}
+                    <div class="error-banner">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span>{{ error }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Camera Scanner Card -->
+        <div class="scanner-card">
+            <div class="scanner-card-header green">
+                <i class="bi bi-camera-video-fill"></i>
+                <span>Camera Scanner</span>
+                <span class="live-badge" id="liveBadge" style="display:none;">
+                    <span class="live-dot"></span> LIVE
+                </span>
+            </div>
+            <div class="scanner-card-body">
+                <div class="camera-frame">
+                    <div id="scanner" class="scanner-view"></div>
+                    <div class="scan-overlay" id="scanOverlay" style="display:none;">
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+
+                <div class="camera-actions">
+                    <button type="button" id="startCam" class="btn-cam-start">
+                        <i class="bi bi-camera-video"></i> Start Camera
+                    </button>
+                    <button type="button" id="stopCam" class="btn-cam-stop" style="display:none;">
+                        <i class="bi bi-stop-circle"></i> Stop
+                    </button>
+                </div>
+
+                <p class="camera-hint">
+                    <i class="bi bi-info-circle"></i>
+                    Position the barcode inside the frame. It will scan automatically.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================================
+         RIGHT: Result
+         ======================================================== -->
+    <div class="col-lg-7">
+
+        {% if product %}
+        <!-- Product Found Card -->
+        <div class="product-result-card">
+            <div class="product-result-header success">
+                <div class="prh-left">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>
+                        <strong>Product Found</strong>
+                        <small>Scanned successfully</small>
+                    </div>
+                </div>
+                <span class="success-pill">MATCHED</span>
+            </div>
+
+            <div class="product-result-body">
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <div class="product-main">
+                            <div class="product-main-icon">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <div>
+                                <h3 class="product-main-name">{{ product.name }}</h3>
+                                <p class="product-main-sku">
+                                    <i class="bi bi-upc"></i> SKU: {{ product.sku|default:"—" }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="product-details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Category</span>
+                                <span class="detail-value">{{ product.category.name|default:"—" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Price</span>
+                                <span class="detail-value green">${{ product.price }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Purchase</span>
+                                <span class="detail-value">${{ product.purchase_price }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Stock</span>
+                                <span class="detail-value
+                                    {% if product.quantity <= 0 %}red
+                                    {% elif product.quantity <= product.low_stock_threshold %}yellow
+                                    {% else %}green{% endif %}">
+                                    {{ product.quantity }} {{ product.unit }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="product-actions">
+                            <a href="{% url 'edit_inventory' product.id %}" class="btn-prod-action primary">
+                                <i class="bi bi-pencil-fill"></i> Edit
+                            </a>
+                            <a href="{% url 'add_stock' product.id %}" class="btn-prod-action success">
+                                <i class="bi bi-plus-circle-fill"></i> Add Stock
+                            </a>
+                            <a href="{% url 'print_barcode_labels' product.id %}" target="_blank" class="btn-prod-action secondary">
+                                <i class="bi bi-printer-fill"></i> Print Label
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5">
+                        <div class="codes-section">
+                            {% if product.barcode %}
+                            <div class="code-block">
+                                <div class="code-label">
+                                    <i class="bi bi-upc"></i> Barcode
+                                </div>
+                                <img src="{% url 'product_barcode' product.id %}"
+                                     alt="Barcode" class="code-img">
+                                <div class="code-text">{{ product.barcode }}</div>
+                            </div>
+                            {% endif %}
+
+                            {% if product.qr_code %}
+                            <div class="code-block">
+                                <div class="code-label">
+                                    <i class="bi bi-qr-code"></i> QR Code
+                                </div>
+                                <img src="{% url 'product_qr' product.id %}"
+                                     alt="QR Code" class="qr-img">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="scanner-empty">
+            <div class="empty-icon">
+                <i class="bi bi-upc-scan"></i>
+                <div class="pulse-ring"></div>
+            </div>
+            <h3>Ready to Scan</h3>
+            <p>
+                Use the manual entry or start the camera to scan a barcode.
+                The product details will appear here instantly.
+            </p>
+
+            <div class="empty-features">
+                <div class="empty-feature">
+                    <i class="bi bi-camera-video-fill"></i>
+                    <span>Camera Scanning</span>
+                </div>
+                <div class="empty-feature">
+                    <i class="bi bi-keyboard-fill"></i>
+                    <span>Manual Entry</span>
+                </div>
+                <div class="empty-feature">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    <span>Instant Results</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- ============================================================
+     STYLES
+     ============================================================ -->
+<style>
+    /* Page Header */
+    .page-header {
+        background: #fff; border-radius: 14px;
+        padding: 22px 28px; margin-bottom: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+    .page-header-content {
+        display: flex; justify-content: space-between;
+        align-items: center; flex-wrap: wrap; gap: 16px;
+    }
+    .page-title {
+        font-size: 1.5rem; font-weight: 800;
+        color: #1e293b; margin: 0 0 4px;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .page-subtitle { color: #64748b; margin: 0; font-size: 0.9rem; }
+    .page-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn-add-product {
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: #fff; padding: 10px 20px;
+        border-radius: 10px; text-decoration: none;
+        font-weight: 600; font-size: 0.9rem;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+    }
+    .btn-add-product:hover {
+        color: #fff; transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59,130,246,0.5);
+    }
+    .btn-secondary-action {
+        background: #f1f5f9; color: #475569;
+        padding: 10px 20px; border-radius: 10px;
+        text-decoration: none; font-weight: 600; font-size: 0.9rem;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: all 0.3s; border: 1px solid #e2e8f0;
+    }
+    .btn-secondary-action:hover { background: #e2e8f0; color: #1e293b; }
+
+    /* Stat Cards */
+    .sc-stat-card {
+        background: #fff; border-radius: 14px; padding: 18px;
+        display: flex; align-items: center; gap: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        transition: all 0.3s;
+        position: relative; overflow: hidden; height: 100%;
+    }
+    .sc-stat-card::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; width: 4px; height: 100%;
+    }
+    .sc-stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+    }
+    .sc-stat-blue::before   { background: #3b82f6; }
+    .sc-stat-green::before  { background: #10b981; }
+    .sc-stat-purple::before { background: #8b5cf6; }
+    .sc-stat-yellow::before { background: #f59e0b; }
+
+    .sc-stat-icon {
+        width: 48px; height: 48px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+    }
+    .sc-stat-blue .sc-stat-icon   { background: #eff6ff; color: #3b82f6; }
+    .sc-stat-green .sc-stat-icon  { background: #ecfdf5; color: #10b981; }
+    .sc-stat-purple .sc-stat-icon { background: #f5f3ff; color: #8b5cf6; }
+    .sc-stat-yellow .sc-stat-icon { background: #fffbeb; color: #f59e0b; }
+
+    .sc-stat-content { flex: 1; min-width: 0; }
+    .sc-stat-label {
+        font-size: 0.72rem; color: #64748b;
+        margin: 0 0 2px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .sc-stat-value {
+        font-size: 1.5rem; font-weight: 800;
+        color: #1e293b; margin: 0; line-height: 1.1;
+    }
+
+    /* Scanner Card */
+    .scanner-card {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        overflow: hidden;
+    }
+    .scanner-card-header {
+        padding: 14px 20px;
+        display: flex; align-items: center; gap: 10px;
+        color: #fff; font-weight: 700; font-size: 0.95rem;
+    }
+    .scanner-card-header.blue {
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+    }
+    .scanner-card-header.green {
+        background: linear-gradient(135deg, #10b981, #047857);
+    }
+    .scanner-card-header i { font-size: 1.1rem; }
+    .scanner-card-body { padding: 20px; }
+
+    .live-badge {
+        margin-left: auto;
+        background: rgba(255,255,255,0.2);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .live-dot {
+        width: 7px; height: 7px;
+        background: #f87171;
+        border-radius: 50%;
+        animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Manual Entry */
+    .form-label-custom {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.82rem; font-weight: 600;
+        color: #475569; margin-bottom: 8px;
+    }
+    .form-label-custom i { color: #3b82f6; }
+    .input-with-icon {
+        position: relative;
+    }
+    .input-with-icon > i {
+        position: absolute;
+        left: 14px; top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8; font-size: 1.1rem;
+        pointer-events: none;
+    }
+    .input-modern {
+        width: 100%; padding: 13px 14px 13px 42px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        background: #f8fafc;
+        color: #1e293b;
+        transition: all 0.2s;
+        font-family: 'Courier New', monospace;
+    }
+    .input-modern:focus {
+        outline: none;
+        border-color: #3b82f6;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(59,130,246,0.1);
+    }
+    .btn-scan-primary {
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: #fff; padding: 12px 20px;
+        border-radius: 10px; border: none;
+        font-weight: 700; font-size: 0.92rem;
+        display: inline-flex; align-items: center; gap: 8px;
+        cursor: pointer; width: 100%;
+        justify-content: center;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+    }
+    .btn-scan-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59,130,246,0.5);
+    }
+    .error-banner {
+        background: #fef2f2;
+        border-left: 4px solid #ef4444;
+        color: #991b1b;
+        padding: 12px 16px;
+        border-radius: 8px;
+        display: flex; align-items: center; gap: 10px;
+        font-size: 0.88rem;
+        margin-top: 14px;
+    }
+    .error-banner i { color: #ef4444; font-size: 1.1rem; }
+
+    /* Camera */
+    .camera-frame {
+        position: relative;
+        width: 100%;
+        height: 280px;
+        background: #0f172a;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+    .scanner-view {
+        width: 100%; height: 100%;
+    }
+    .scanner-view video,
+    .scanner-view canvas {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover;
+    }
+    .scan-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+    .scan-line {
+        position: absolute;
+        left: 10%; right: 10%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #10b981, transparent);
+        box-shadow: 0 0 12px #10b981;
+        animation: scan-sweep 2s ease-in-out infinite;
+    }
+    @keyframes scan-sweep {
+        0%, 100% { top: 15%; }
+        50% { top: 85%; }
+    }
+    .camera-actions {
+        display: flex; gap: 10px;
+    }
+    .btn-cam-start {
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: #fff; padding: 11px 20px;
+        border-radius: 10px; border: none;
+        font-weight: 700; font-size: 0.9rem;
+        display: inline-flex; align-items: center; gap: 8px;
+        cursor: pointer; flex: 1;
+        justify-content: center;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    .btn-cam-start:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16,185,129,0.5);
+    }
+    .btn-cam-stop {
+        background: #ef4444; color: #fff;
+        padding: 11px 20px; border-radius: 10px;
+        border: none; font-weight: 700; font-size: 0.9rem;
+        display: inline-flex; align-items: center; gap: 8px;
+        cursor: pointer; flex: 1;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+    .btn-cam-stop:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+    }
+    .camera-hint {
+        margin: 12px 0 0;
+        font-size: 0.82rem;
+        color: #64748b;
+        display: flex; align-items: flex-start; gap: 6px;
+        line-height: 1.5;
+    }
+    .camera-hint i { color: #3b82f6; margin-top: 2px; }
+
+    /* Product Result */
+    .product-result-card {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 20px rgba(16,185,129,0.1);
+        overflow: hidden;
+    }
+    .product-result-header {
+        padding: 16px 22px;
+        display: flex; justify-content: space-between;
+        align-items: center;
+    }
+    .product-result-header.success {
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        border-bottom: 1px solid #a7f3d0;
+    }
+    .prh-left {
+        display: flex; align-items: center; gap: 12px;
+    }
+    .prh-left > i {
+        font-size: 1.8rem;
+        color: #10b981;
+    }
+    .prh-left strong {
+        display: block;
+        color: #065f46;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .prh-left small {
+        color: #047857;
+        font-size: 0.8rem;
+    }
+    .success-pill {
+        background: #10b981;
+        color: #fff;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .product-result-body { padding: 24px; }
+
+    .product-main {
+        display: flex; align-items: center; gap: 16px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 20px;
+    }
+    .product-main-icon {
+        width: 60px; height: 60px;
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: #fff; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem;
+        flex-shrink: 0;
+        box-shadow: 0 8px 20px rgba(59,130,246,0.3);
+    }
+    .product-main-name {
+        font-size: 1.3rem; font-weight: 800;
+        color: #1e293b; margin: 0 0 4px;
+    }
+    .product-main-sku {
+        color: #64748b; font-size: 0.85rem;
+        margin: 0; font-family: 'Courier New', monospace;
+        display: flex; align-items: center; gap: 6px;
+    }
+
+    .product-details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+    .detail-item {
+        background: #f8fafc;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+    .detail-label {
+        display: block;
+        font-size: 0.72rem;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .detail-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .detail-value.green { color: #059669; }
+    .detail-value.red { color: #dc2626; }
+    .detail-value.yellow { color: #d97706; }
+
+    .product-actions {
+        display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .btn-prod-action {
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+    .btn-prod-action.primary {
+        background: #eff6ff; color: #1e40af;
+        border-color: #bfdbfe;
+    }
+    .btn-prod-action.primary:hover {
+        background: #3b82f6; color: #fff;
+    }
+    .btn-prod-action.success {
+        background: #ecfdf5; color: #047857;
+        border-color: #a7f3d0;
+    }
+    .btn-prod-action.success:hover {
+        background: #10b981; color: #fff;
+    }
+    .btn-prod-action.secondary {
+        background: #f1f5f9; color: #475569;
+        border-color: #e2e8f0;
+    }
+    .btn-prod-action.secondary:hover {
+        background: #475569; color: #fff;
+    }
+
+    /* Codes Section */
+    .codes-section {
+        display: flex; flex-direction: column; gap: 14px;
+    }
+    .code-block {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+    }
+    .code-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .code-label i { color: #3b82f6; }
+    .code-img {
+        width: 100%;
+        max-width: 280px;
+        height: auto;
+        background: #fff;
+        padding: 8px;
+        border-radius: 6px;
+    }
+    .code-text {
+        font-family: 'Courier New', monospace;
+        font-size: 0.78rem;
+        color: #1e293b;
+        margin-top: 6px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .qr-img {
+        width: 110px;
+        height: 110px;
+        background: #fff;
+        padding: 6px;
+        border-radius: 6px;
+    }
+
+    /* Empty State */
+    .scanner-empty {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        padding: 60px 30px;
+        text-align: center;
+        min-height: 500px;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+    }
+    .empty-icon {
+        position: relative;
+        width: 120px; height: 120px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 24px;
+    }
+    .empty-icon > i {
+        font-size: 4rem;
+        color: #3b82f6;
+        position: relative;
+        z-index: 2;
+    }
+    .pulse-ring {
+        position: absolute;
+        inset: 0;
+        border: 3px solid #3b82f6;
+        border-radius: 50%;
+        opacity: 0;
+        animation: pulse-ring 2s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+        0% { transform: scale(0.7); opacity: 0.8; }
+        100% { transform: scale(1.3); opacity: 0; }
+    }
+    .scanner-empty h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0 0 10px;
+    }
+    .scanner-empty p {
+        color: #64748b;
+        font-size: 0.95rem;
+        max-width: 450px;
+        line-height: 1.7;
+        margin-bottom: 30px;
+    }
+    .empty-features {
+        display: flex; gap: 14px; flex-wrap: wrap;
+        justify-content: center;
+    }
+    .empty-feature {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 10px 18px;
+        border-radius: 10px;
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.85rem;
+        color: #475569;
+        font-weight: 600;
+    }
+    .empty-feature i { color: #3b82f6; font-size: 1rem; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .page-header-content { flex-direction: column; align-items: flex-start; }
+        .page-title { font-size: 1.2rem; }
+        .sc-stat-value { font-size: 1.2rem; }
+        .sc-stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+        .product-details-grid { grid-template-columns: 1fr; }
+        .camera-frame { height: 220px; }
+    }
+</style>
+
+<!-- ============================================================
+     QUGGA JS — BARCODE SCANNING
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+<script>
+    const startBtn = document.getElementById('startCam');
+    const stopBtn = document.getElementById('stopCam');
+    const liveBadge = document.getElementById('liveBadge');
+    const scanOverlay = document.getElementById('scanOverlay');
+
+    startBtn.addEventListener('click', function() {
+        startBtn.disabled = true;
+        startBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Starting...';
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner'),
+                constraints: {
+                    facingMode: "environment",
+                    width: { min: 640 },
+                    height: { min: 480 }
+                },
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            numOfWorkers: navigator.hardwareConcurrency || 4,
+            frequency: 10,
+            decoder: {
+                readers: [
+                    "code_128_reader",
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_39_reader",
+                    "upc_reader",
+                    "upc_e_reader",
+                    "codabar_reader"
+                ]
+            },
+            locate: true
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                alert('Camera error: ' + (err.message || err));
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="bi bi-camera-video"></i> Start Camera';
+                return;
+            }
+            Quagga.start();
+
+            // Show LIVE badge and scan overlay
+            liveBadge.style.display = 'inline-flex';
+            scanOverlay.style.display = 'block';
+
+            // Switch buttons
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+        });
+
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            if (code) {
+                // Visual feedback
+                if (navigator.vibrate) navigator.vibrate(100);
+
+                // Fill manual input and submit
+                document.getElementById('barcodeInput').value = code;
+                Quagga.stop();
+                document.getElementById('manualForm').submit();
+            }
+        });
+    });
+
+    stopBtn.addEventListener('click', function() {
+        Quagga.stop();
+        liveBadge.style.display = 'none';
+        scanOverlay.style.display = 'none';
+        stopBtn.style.display = 'none';
+        startBtn.style.display = 'inline-flex';
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<i class="bi bi-camera-video"></i> Start Camera';
+    });
+
+    // Keyboard shortcut: Ctrl + K to focus input
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('barcodeInput').focus();
+        }
+    });
+</script>
+{% endblock %}

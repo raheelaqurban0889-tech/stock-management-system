@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }} — {{ settings.company_name }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 20px; color: #1e293b; }
+
+        .btn-bar { text-align: center; margin-bottom: 20px; }
+        .btn { padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin: 0 4px; transition: all 0.2s; }
+        .btn-primary { background: #3b82f6; color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary { background: #64748b; color: #fff; }
+        .btn-secondary:hover { background: #475569; }
+
+        .invoice-page { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 3px solid #1e293b; margin-bottom: 24px; gap: 20px; }
+        .company-block { display: flex; gap: 14px; }
+        .company-logo { width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1e40af); border-radius: 12px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0; }
+        .company-name { font-size: 1.2rem; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+        .company-detail { font-size: 0.8rem; color: #64748b; line-height: 1.5; }
+        .invoice-block { text-align: right; }
+        .invoice-label { font-size: 1.6rem; font-weight: 800; color: #1e293b; letter-spacing: 3px; margin-bottom: 12px; }
+        .invoice-meta { font-size: 0.82rem; line-height: 1.8; }
+        .invoice-meta strong { color: #1e293b; }
+
+        /* Customer */
+        .customer-box { background: #eff6ff; padding: 16px 20px; border-radius: 10px; border-left: 4px solid #3b82f6; margin-bottom: 24px; }
+        .customer-label { font-size: 0.72rem; color: #3b82f6; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .customer-name { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+        .customer-info { font-size: 0.82rem; color: #475569; line-height: 1.6; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        thead th { background: #1e293b; color: #fff; padding: 12px 16px; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        tbody td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.88rem; }
+        tbody tr:last-child td { border-bottom: 2px solid #e2e8f0; }
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+        .mono { font-family: 'Courier New', monospace; }
+
+        /* Totals */
+        .totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+        .totals { width: 300px; background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.88rem; }
+        .total-row span { color: #64748b; }
+        .total-row strong { font-family: 'Courier New', monospace; }
+        .total-grand { border-top: 2px solid #1e293b; margin-top: 8px; padding-top: 14px; font-size: 1.1rem; }
+        .total-grand span { color: #1e293b; font-weight: 800; }
+        .total-grand strong { color: #3b82f6; font-size: 1.3rem; }
+
+        /* Notes */
+        .notes { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 8px; margin-bottom: 24px; }
+        .notes h4 { color: #d97706; font-size: 0.85rem; margin-bottom: 6px; }
+        .notes p { font-size: 0.85rem; color: #78350f; }
+
+        /* Footer */
+        .footer { background: #1e293b; color: #cbd5e1; padding: 16px; text-align: center; font-size: 0.82rem; border-radius: 8px; }
+
+        /* Print */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .btn-bar { display: none; }
+            .invoice-page { box-shadow: none; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Buttons (not printed) -->
+<div class="btn-bar">
+    <button class="btn btn-primary" onclick="window.print()">🖨️ Print Invoice</button>
+    <a href="{% url 'download_invoice_pdf' invoice.id %}" class="btn btn-secondary">📥 Download PDF</a>
+    <a href="{% url 'invoice_detail' invoice.id %}" class="btn btn-secondary">← Back</a>
+</div>
+
+<!-- Invoice Page -->
+<div class="invoice-page">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="company-block">
+            <div class="company-logo">📦</div>
+            <div>
+                <div class="company-name">{{ settings.company_name }}</div>
+                <div class="company-detail">
+                    {{ settings.company_address }}<br>
+                    {{ settings.company_phone }} · {{ settings.company_email }}
+                    {% if settings.company_trn %}<br>TRN: {{ settings.company_trn }}{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="invoice-block">
+            <div class="invoice-label">INVOICE</div>
+            <div class="invoice-meta">
+                <div><strong>#</strong> {{ invoice.invoice_number }}</div>
+                <div><strong>Date:</strong> {{ invoice.created_at|date:"d M Y" }}</div>
+                <div><strong>Payment:</strong> {{ invoice.get_payment_method_display }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer -->
+    <div class="customer-box">
+        <div class="customer-label">Bill To</div>
+        <div class="customer-name">{{ invoice.customer.company_name|default:invoice.customer_name|default:"Walk-in Customer" }}</div>
+        <div class="customer-info">
+            {% if invoice.customer.contact_person %}{{ invoice.customer.contact_person }}<br>{% endif %}
+            {% if invoice.customer.phone %}{{ invoice.customer.full_phone }}<br>{% endif %}
+            {% if invoice.customer.email %}{{ invoice.customer.email }}<br>{% endif %}
+            {% if invoice.customer.address %}{{ invoice.customer.address }}{% endif %}
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th>Product</th>
+                <th class="text-center" style="width: 80px;">Qty</th>
+                <th class="text-end" style="width: 120px;">Price</th>
+                <th class="text-end" style="width: 120px;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><strong>{{ item.product.name }}</strong></td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-end mono">{{ currency_symbol }}{{ item.price }}</td>
+                <td class="text-end mono"><strong>{{ currency_symbol }}{{ item.total }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-wrap">
+        <div class="totals">
+            <div class="total-row">
+                <span>Subtotal</span>
+                <strong>{{ currency_symbol }}{{ invoice.subtotal }}</strong>
+            </div>
+            <div class="total-row">
+                <span>Discount ({{ invoice.discount_percent }}%)</span>
+                <strong style="color: #dc2626;">-{{ currency_symbol }}{{ invoice.discount }}</strong>
+            </div>
+            <div class="total-row">
+                <span>{{ invoice.tax_name }} ({{ invoice.tax_percent }}%)</span>
+                <strong>{{ currency_symbol }}{{ invoice.tax }}</strong>
+            </div>
+            <div class="total-row total-grand">
+                <span>Grand Total</span>
+                <strong>{{ currency_symbol }}{{ invoice.grand_total }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes -->
+    {% if invoice.notes %}
+    <div class="notes">
+        <h4>Notes:</h4>
+        <p>{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        Thank you for your business!
+    </div>
+
+</div>
+
+</body>
+</html>

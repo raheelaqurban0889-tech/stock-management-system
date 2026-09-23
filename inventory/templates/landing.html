@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock, Inventory & Sales Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* ============================================================
+           ANIMATIONS
+           ============================================================ */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.7); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-12px); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.05); }
+        }
+        @keyframes gradientShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes shimmer {
+            0%   { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        @keyframes slideRight {
+            from { transform: translateX(-100%); }
+            to   { transform: translateX(0); }
+        }
+
+        .anim-fade-up   { animation: fadeInUp 0.8s ease-out both; }
+        .anim-zoom-in   { animation: zoomIn 0.7s ease-out both; }
+        .anim-float     { animation: float 3s ease-in-out infinite; }
+        .anim-pulse     { animation: pulse 2s ease-in-out infinite; }
+        .anim-delay-1   { animation-delay: 0.2s; }
+        .anim-delay-2   { animation-delay: 0.4s; }
+        .anim-delay-3   { animation-delay: 0.6s; }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ============================================================
+           NAVBAR (Sticky)
+           ============================================================ */
+        .main-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 999;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            transition: all 0.3s;
+        }
+        .main-nav .nav-brand {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.15rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .main-nav .nav-brand i {
+            color: #3b82f6;
+            font-size: 1.5rem;
+        }
+        .main-nav .nav-link {
+            color: #cbd5e1 !important;
+            font-size: 0.92rem;
+            font-weight: 500;
+            padding: 8px 16px !important;
+            transition: color 0.2s;
+        }
+        .main-nav .nav-link:hover {
+            color: #3b82f6 !important;
+        }
+        .main-nav .btn-nav-login {
+            background: #3b82f6;
+            color: #fff;
+            padding: 8px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .main-nav .btn-nav-login:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        /* ============================================================
+           HERO
+           ============================================================ */
+        .hero {
+            background: linear-gradient(-45deg, #1e293b, #1e40af, #3b82f6, #1e293b);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            color: #fff;
+            padding: 160px 0 100px;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .hero::before, .hero::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%);
+            animation: float 8s ease-in-out infinite;
+        }
+        .hero::before { width: 600px; height: 600px; top: -200px; right: -200px; }
+        .hero::after  { width: 500px; height: 500px; bottom: -200px; left: -200px; animation-direction: reverse; }
+
+        .hero-content { position: relative; z-index: 2; }
+        .hero-icon {
+            width: 100px; height: 100px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            border-radius: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #fff;
+            box-shadow: 0 15px 40px rgba(59,130,246,0.5);
+            margin-bottom: 30px;
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        .hero h1 .highlight {
+            background: linear-gradient(90deg, #60a5fa, #3b82f6, #60a5fa);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        .hero p {
+            font-size: 1.15rem;
+            opacity: 0.85;
+            max-width: 650px;
+            margin: 0 auto 35px;
+            line-height: 1.7;
+        }
+        .btn-hero {
+            background: #fff;
+            color: #1e40af;
+            padding: 15px 38px;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 2px solid transparent;
+        }
+        .btn-hero:hover {
+            background: #1e293b;
+            color: #fff;
+            transform: translateY(-4px);
+            border-color: #3b82f6;
+        }
+        .btn-hero-outline {
+            background: transparent;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 15px 38px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            margin-left: 12px;
+        }
+        .btn-hero-outline:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: #fff;
+            color: #fff;
+        }
+
+        /* ============================================================
+           TRUST BADGES
+           ============================================================ */
+        .trust-bar {
+            background: #fff;
+            padding: 30px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .trust-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #64748b;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+        .trust-item i {
+            font-size: 1.5rem;
+            color: #3b82f6;
+        }
+
+        /* ============================================================
+           SECTION HELPERS
+           ============================================================ */
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-number {
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #3b82f6;
+            background: #eff6ff;
+            padding: 6px 18px;
+            border-radius: 20px;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+        }
+        .section-title {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 14px;
+            line-height: 1.2;
+        }
+        .section-title .accent { color: #3b82f6; }
+        .section-subtitle {
+            color: #64748b;
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ============================================================
+           FEATURES
+           ============================================================ */
+       /* ============================================================
+   FEATURES (WITH IMAGES)
+   ============================================================ */
+.features-section { padding: 100px 0; background: #fff; }
+
+.feature-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.4s;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 50px rgba(59,130,246,0.2);
+    border-color: #3b82f6;
+}
+
+/* Image at top */
+.feature-image {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+.feature-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+.feature-card:hover .feature-image img {
+    transform: scale(1.1);
+}
+
+/* Overlay with zoom icon on hover */
+.feature-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(30, 41, 59, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+.feature-overlay i {
+    color: #fff;
+    font-size: 2.5rem;
+}
+.feature-card:hover .feature-overlay {
+    opacity: 1;
+}
+
+/* Icon below image */
+.feature-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: #fff;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin: -30px 0 15px 25px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 8px 20px rgba(59,130,246,0.4);
+    transition: all 0.4s;
+}
+.feature-card:hover .feature-icon {
+    transform: scale(1.1) rotate(-8deg);
+}
+
+/* Content below */
+.feature-card h5 {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 1.15rem;
+    margin: 0 25px 10px;
+}
+.feature-card p {
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    margin: 0 25px 25px;
+}
+        /* ============================================================
+           STEPS (Numbered)
+           ============================================================ */
+        .how-section { padding: 100px 0; background: #f8fafc; }
+        .step-card {
+            text-align: center;
+            padding: 30px 20px;
+            position: relative;
+            transition: transform 0.4s;
+        }
+        .step-card:hover { transform: translateY(-10px); }
+        .step-number {
+            width: 90px; height: 90px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: #fff;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            box-shadow: 0 10px 30px rgba(59,130,246,0.4);
+            margin-bottom: 25px;
+            position: relative;
+            transition: all 0.4s;
+        }
+        .step-card:hover .step-number { transform: rotate(360deg) scale(1.1); }
+        .step-number::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px dashed #3b82f6;
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .step-card h5 { font-weight: 700; color: #1e293b; font-size: 1.2rem; margin-bottom: 12px; }
+        .step-card p { color: #64748b; font-size: 0.95rem; line-height: 1.6; }
+        .step-connector {
+            position: absolute;
+            top: 45px; right: -30px;
+            color: #3b82f6;
+            font-size: 2rem;
+            opacity: 0.4;
+        }
+        @media (max-width: 768px) { .step-connector { display: none; } }
+
+        /* ============================================================
+           SCREENSHOTS SECTION
+           ============================================================ */
+        .screenshots-section {
+            padding: 100px 0;
+            background: linear-gradient(135deg, #1e293b, #1e40af);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .screenshots-section .section-title { color: #fff; }
+        .screenshots-section .section-subtitle { color: #cbd5e1; }
+        .screenshots-section .section-number { background: rgba(255,255,255,0.1); color: #93c5fd; }
+
+        .screenshot-card {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transition: all 0.4s;
+            cursor: pointer;
+        }
+        .screenshot-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+        .screenshot-header {
+            background: #f1f5f9;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .screenshot-header .dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+        }
+        .screenshot-header .dot.red    { background: #ef4444; }
+        .screenshot-header .dot.yellow { background: #f59e0b; }
+        .screenshot-header .dot.green  { background: #10b981; }
+        .screenshot-header .url {
+            margin-left: 10px;
+            font-size: 0.75rem;
+            color: #64748b;
+            font-family: monospace;
+        }
+        .screenshot-body {
+            padding: 0;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        .screenshot-body i {
+            font-size: 4rem;
+            color: #94a3b8;
+        }
+
+        /* ============================================================
+           DEMO SECTION
+           ============================================================ */
+        .demo-section {
+            padding: 100px 0;
+            background: #fff;
+        }
+        .demo-card {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 2px solid #3b82f6;
+            border-radius: 20px;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .demo-card::before {
+            content: '';
+            position: absolute;
+            top: -50px; right: -50px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(59,130,246,0.2), transparent);
+            border-radius: 50%;
+        }
+        .demo-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: #fff;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(59,130,246,0.4);
+        }
+        .demo-card h3 {
+            color: #1e293b;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .demo-card p {
+            color: #475569;
+            max-width: 550px;
+            margin: 0 auto 25px;
+        }
+        .demo-credentials {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .demo-credentials .cred-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .demo-credentials .cred-row:last-child { border-bottom: none; }
+        .demo-credentials .cred-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .demo-credentials .cred-value {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 6px;
+            color: #1e293b;
+            font-weight: 700;
+        }
+        .btn-demo {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: #fff;
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(59,130,246,0.4);
+            transition: all 0.3s;
+            border: none;
+        }
+        .btn-demo:hover {
+            color: #fff;
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(59,130,246,0.6);
+        }
+
+        /* ============================================================
+           STATS SECTION
+           ============================================================ */
+        .stats-section {
+            background: linear-gradient(135deg, #1e293b, #1e40af);
+            padding: 80px 0;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .stats-section::before {
+            content: '';
+            position: absolute;
+            top: -100px; right: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(59,130,246,0.3), transparent);
+            border-radius: 50%;
+        }
+        .stat-box { text-align: center; padding: 20px; position: relative; z-index: 2; }
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #ffffff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        .stat-label {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           TESTIMONIALS
+           ============================================================ */
+        .testimonials-section {
+            padding: 100px 0;
+            background: #f8fafc;
+        }
+        .testimonial-card {
+            background: #fff;
+            padding: 35px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            height: 100%;
+            transition: all 0.3s;
+            border: 1px solid #e2e8f0;
+        }
+        .testimonial-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        .testimonial-stars {
+            color: #f59e0b;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .testimonial-text {
+            color: #475569;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .testimonial-avatar {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .testimonial-info h6 { margin: 0; color: #1e293b; font-weight: 700; }
+        .testimonial-info small { color: #64748b; }
+
+        /* ============================================================
+           FAQ
+           ============================================================ */
+        .faq-section { padding: 100px 0; background: #fff; }
+        .faq-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .faq-item:hover { border-color: #3b82f6; }
+        .faq-question {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 20px 25px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #1e293b;
+            transition: all 0.3s;
+        }
+        .faq-question:hover { color: #3b82f6; }
+        .faq-question i {
+            color: #3b82f6;
+            transition: transform 0.3s;
+            font-size: 1.2rem;
+        }
+        .faq-item.active .faq-question i { transform: rotate(180deg); }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            padding: 0 25px;
+            color: #64748b;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        .faq-item.active .faq-answer {
+            max-height: 300px;
+            padding: 0 25px 20px;
+        }
+
+        /* ============================================================
+           CTA
+           ============================================================ */
+        .cta-section {
+            padding: 100px 0;
+            background: linear-gradient(135deg, #1e293b, #1e40af);
+            color: #fff;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -100px; left: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(59,130,246,0.3), transparent);
+            border-radius: 50%;
+        }
+        .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 2;
+        }
+        .cta-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 35px;
+            position: relative;
+            z-index: 2;
+        }
+        .btn-cta {
+            background: #fff;
+            color: #1e40af;
+            padding: 16px 42px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+        }
+        .btn-cta:hover {
+            color: #1e40af;
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        footer {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 50px 0 25px;
+        }
+        footer .footer-brand {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        footer .footer-brand i { color: #3b82f6; font-size: 1.5rem; }
+        footer p { margin: 0; font-size: 0.9rem; line-height: 1.7; }
+        footer h6 {
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        footer ul { list-style: none; padding: 0; margin: 0; }
+        footer ul li { margin-bottom: 8px; }
+        footer ul li a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: color 0.2s;
+        }
+        footer ul li a:hover { color: #3b82f6; }
+        footer .footer-bottom {
+            border-top: 1px solid #1e293b;
+            margin-top: 40px;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .hero p { font-size: 1rem; }
+            .section-title { font-size: 1.8rem; }
+            .stat-number { font-size: 2.2rem; }
+            .cta-section h2 { font-size: 1.8rem; }
+            .hero { padding: 120px 0 60px; }
+            .btn-hero-outline { margin-left: 0; margin-top: 12px; }
+            .demo-card { padding: 35px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAVBAR
+     ============================================================ -->
+<nav class="main-nav">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a href="#" class="nav-brand">
+            <i class="bi bi-box-seam"></i>
+            Stock Manager
+        </a>
+        <div class="d-none d-md-flex align-items-center">
+            <a href="#features" class="nav-link">Features</a>
+            <a href="#how" class="nav-link">How it Works</a>
+            <a href="#demo" class="nav-link">Demo</a>
+            <a href="#faq" class="nav-link">FAQ</a>
+            <a href="{% url 'login' %}" class="btn-nav-login ms-3">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero" id="home">
+    <div class="container hero-content text-center">
+        <div class="hero-icon anim-zoom-in">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <h1 class="anim-fade-up anim-delay-1">
+            Stock, <span class="highlight">Inventory</span> &<br>
+            Sales Management System
+        </h1>
+        <p class="anim-fade-up anim-delay-2">
+            Complete business solution for managing products, tracking inventory,
+            generating invoices, and analyzing performance — all in real-time.
+        </p>
+        <div class="anim-fade-up anim-delay-3">
+            <a href="{% url 'login' %}" class="btn-hero">
+                <i class="bi bi-box-arrow-in-right"></i> Login to System
+            </a>
+            <a href="#demo" class="btn-hero-outline">
+                <i class="bi bi-play-circle"></i> Try Demo
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     TRUST BAR
+     ============================================================ -->
+<section class="trust-bar">
+    <div class="container">
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="trust-item">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Secure & Reliable</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="trust-item">
+                    <i class="bi bi-lightning-charge"></i>
+                    <span>Real-time Updates</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="trust-item">
+                    <i class="bi bi-phone"></i>
+                    <span>Responsive Design</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="trust-item">
+                    <i class="bi bi-cloud-check"></i>
+                    <span>Data Backup</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 01 - FEATURES (WITH IMAGES)
+     ============================================================ -->
+<section class="features-section" id="features">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-number">01 — Features</span>
+            <h2 class="section-title">
+                Powerful <span class="accent">Features</span> Built for Business
+            </h2>
+            <p class="section-subtitle">
+                Everything you need to manage inventory, sales, and reporting in one platform.
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Feature 1: Inventory -->
+            <div class="col-md-4 reveal">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        {% load static %}
+                        <img src="{% static 'images/landing/inventory.png' %} "alt="Inventory Management">
+                        <div class="feature-overlay">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                    <h5>Inventory Management</h5>
+                    <p>Track products in real-time with automatic stock updates and low-stock alerts.</p>
+                </div>
+            </div>
+
+            <!-- Feature 2: Sales & Invoicing -->
+            <div class="col-md-4 reveal">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <img src="{% static 'images/landing/invoice.png' %}" alt="Sales & Invoicing">
+                        <div class="feature-overlay">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <h5>Sales & Invoicing</h5>
+                    <p>Generate professional invoices with automatic calculations and PDF export.</p>
+                </div>
+            </div>
+
+            <!-- Feature 3: Barcode & QR -->
+            <div class="col-md-4 reveal">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <img src="{% static 'images/landing/barcode.png' %}" alt="Barcode & QR Codes">
+                        <div class="feature-overlay">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="bi bi-upc-scan"></i>
+                    </div>
+                    <h5>Barcode & QR Codes</h5>
+                    <p>Generate and scan barcodes for fast product lookup and tracking.</p>
+                </div>
+            </div>
+
+            <!-- Feature 4: Reports -->
+            <div class="col-md-4 reveal">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <img src="{% static 'images/landing/reports.png' %}" alt="Reports & Analytics">
+                        <div class="feature-overlay">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h5>Reports & Analytics</h5>
+                    <p>Analyze sales, profit/loss, and inventory with interactive charts.</p>
+                </div>
+            </div>
+
+            <!-- Feature 5: Customers -->
+            <div class="col-md-4 reveal">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <img src="{% static 'images/landing/customers.png' %}" alt="Customer Management">
+                        <div class="feature-overlay">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h5>Customer Management</h5>
+                    <p>Maintain customer records with complete transaction history.</p>
+                </div>
+            </div>
+
+            <!-- Feature 6: Security -->
+            <div class="col-md-4 reveal">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <img src="{% static 'images/landing/security.png' %}" alt="Secure & Role-Based">
+                        <div class="feature-overlay">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                    <h5>Secure & Role-Based</h5>
+                    <p>Admin, Manager, Salesman roles with secure authentication.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+<!-- ============================================================
+     SECTION 02 - HOW IT WORKS
+     ============================================================ -->
+<section class="how-section" id="how">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-number">02 — Process</span>
+            <h2 class="section-title">
+                How It <span class="accent">Works</span> in 4 Simple Steps
+            </h2>
+            <p class="section-subtitle">Get started in minutes — no training required.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-3 reveal">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h5>Add Products</h5>
+                    <p>Register products with prices, stock, and categories.</p>
+                    <i class="bi bi-arrow-right step-connector"></i>
+                </div>
+            </div>
+            <div class="col-md-3 reveal">
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h5>Manage Stock</h5>
+                    <p>Add stock entries and track inventory movements.</p>
+                    <i class="bi bi-arrow-right step-connector"></i>
+                </div>
+            </div>
+            <div class="col-md-3 reveal">
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h5>Create Invoices</h5>
+                    <p>Generate invoices with automatic stock deduction.</p>
+                    <i class="bi bi-arrow-right step-connector"></i>
+                </div>
+            </div>
+            <div class="col-md-3 reveal">
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h5>Analyze Reports</h5>
+                    <p>View sales, profit/loss, and inventory reports.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 03 - SCREENSHOTS
+     ============================================================ -->
+<section class="screenshots-section" id="screenshots">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-number">03 — Screenshots</span>
+            <h2 class="section-title">
+                See the System <span class="accent">in Action</span>
+            </h2>
+            <p class="section-subtitle">A clean, intuitive interface designed for productivity.</p>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Screenshot 1: Dashboard -->
+            <div class="col-md-6 reveal">
+                <div class="screenshot-card">
+                    <div class="screenshot-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="url">stockmanager/dashboard</span>
+                    </div>
+                    <div class="screenshot-body">
+                        <img src="{% static 'images/landing/dashboard-preview.png' %}"
+                             alt="Dashboard Preview">
+                    </div>
+                </div>
+                <p class="text-center mt-2 mb-0" style="color:#cbd5e1; font-size:0.9rem;">
+                    Dashboard with KPIs & Charts
+                </p>
+            </div>
+
+            <!-- Screenshot 2: Inventory -->
+            <div class="col-md-6 reveal">
+                <div class="screenshot-card">
+                    <div class="screenshot-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="url">stockmanager/inventory</span>
+                    </div>
+                    <div class="screenshot-body">
+                        <img src="{% static 'images/landing/inventory-preview.png' %}"
+                             alt="Inventory Management">
+                    </div>
+                </div>
+                <p class="text-center mt-2 mb-0" style="color:#cbd5e1; font-size:0.9rem;">
+                    Inventory Management
+                </p>
+            </div>
+
+            <!-- Screenshot 3: Invoice -->
+            <div class="col-md-6 reveal">
+                <div class="screenshot-card">
+                    <div class="screenshot-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="url">stockmanager/invoice/create</span>
+                    </div>
+                    <div class="screenshot-body">
+                        <img src="{% static 'images/landing/invoice-preview.png' %}"
+                             alt="Sales Invoice Creation">
+                    </div>
+                </div>
+                <p class="text-center mt-2 mb-0" style="color:#cbd5e1; font-size:0.9rem;">
+                    Sales Invoice Creation
+                </p>
+            </div>
+
+            <!-- Screenshot 4: Reports -->
+            <div class="col-md-6 reveal">
+                <div class="screenshot-card">
+                    <div class="screenshot-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="url">stockmanager/reports</span>
+                    </div>
+                    <div class="screenshot-body">
+                        <img src="{% static 'images/landing/reports-preview.png' %}"
+                             alt="Reports & Analytics">
+                    </div>
+                </div>
+                <p class="text-center mt-2 mb-0" style="color:#cbd5e1; font-size:0.9rem;">
+                    Reports & Analytics
+                </p>
+            </div>
+
+        </div>
+    </div>
+</section>
+<!-- ============================================================
+     SECTION 04 - DEMO
+     ============================================================ -->
+<section class="demo-section" id="demo">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-number">04 — Try Demo</span>
+            <h2 class="section-title">
+                Try It <span class="accent">Yourself</span>
+            </h2>
+            <p class="section-subtitle">Use these demo credentials to explore the system.</p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8 reveal">
+                <div class="demo-card">
+                    <div class="demo-icon">
+                        <i class="bi bi-play-circle"></i>
+                    </div>
+                    <h3>Live Demo Account</h3>
+                    <p>Explore all features without any signup. Perfect for testing and evaluation.</p>
+
+                    <div class="demo-credentials">
+                        <div class="cred-row">
+                            <span class="cred-label"><i class="bi bi-person-fill"></i> Username</span>
+                            <span class="cred-value">admin</span>
+                        </div>
+                        <div class="cred-row">
+                            <span class="cred-label"><i class="bi bi-lock-fill"></i> Password</span>
+                            <span class="cred-value">admin@2026</span>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'login' %}" class="btn-demo">
+                        <i class="bi bi-rocket-takeoff"></i>
+                        Launch Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     STATS
+     ============================================================ -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 reveal">
+                <div class="stat-box">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Automated</div>
+                </div>
+            </div>
+            <div class="col-md-3 reveal">
+                <div class="stat-box">
+                    <div class="stat-number">10+</div>
+                    <div class="stat-label">Modules</div>
+                </div>
+            </div>
+            <div class="col-md-3 reveal">
+                <div class="stat-box">
+                    <div class="stat-number">28+</div>
+                    <div class="stat-label">Features</div>
+                </div>
+            </div>
+            <div class="col-md-3 reveal">
+                <div class="stat-box">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Available</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     TESTIMONIALS
+     ============================================================ -->
+<section class="testimonials-section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-number">05 — Testimonials</span>
+            <h2 class="section-title">
+                What <span class="accent">Users Say</span>
+            </h2>
+            <p class="section-subtitle">Feedback from beta testing and evaluation.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4 reveal">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <p class="testimonial-text">"Very intuitive and easy to use. The inventory tracking is exactly what small businesses need."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">AK</div>
+                        <div class="testimonial-info">
+                            <h6>Ahmed Khan</h6>
+                            <small>Store Owner</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 reveal">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <p class="testimonial-text">"The auto-calculations and stock deduction save me hours every day. Highly recommended!"</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">SM</div>
+                        <div class="testimonial-info">
+                            <h6>Sara Malik</h6>
+                            <small>Sales Manager</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 reveal">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-half"></i>
+                    </div>
+                    <p class="testimonial-text">"Barcode scanning feature is a game-changer. Reports give real insights into our business."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">HB</div>
+                        <div class="testimonial-info">
+                            <h6>Hassan Bilal</h6>
+                            <small>Warehouse Supervisor</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     FAQ
+     ============================================================ -->
+<section class="faq-section" id="faq">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-number">06 — FAQ</span>
+            <h2 class="section-title">
+                Frequently Asked <span class="accent">Questions</span>
+            </h2>
+            <p class="section-subtitle">Everything you need to know about the system.</p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-9 reveal">
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Is this system really free to use?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        Yes! This is a Virtual University software project, completely free for educational and evaluation purposes. No hidden charges, no subscriptions.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Do I need a special barcode scanner?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        No special hardware required. You can use your phone's camera to scan barcodes directly from the browser, or enter barcodes manually. Any USB/Bluetooth scanner also works.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What user roles are supported?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        Three roles: <strong>Admin</strong> (full access), <strong>Manager</strong> (operations + reports), and <strong>Salesman</strong> (sales + customers). Each role has specific permissions enforced through role-based access control.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I generate invoices and download PDFs?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        Absolutely. The system automatically calculates totals including tax and discount, generates professional invoices, and lets you print or download them as PDF files.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Is my data safe?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        Yes. Passwords are hashed with Django's built-in security, role-based access controls every page, and all database operations use transactions to maintain data integrity.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Does it work on mobile devices?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        Yes! The entire system is fully responsive. It works on desktop, tablet, and mobile browsers. The sidebar auto-hides on small screens and the barcode scanner uses your phone camera.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     CTA
+     ============================================================ -->
+<section class="cta-section">
+    <div class="container">
+        <div class="reveal">
+            <h2>Ready to Streamline Your Business?</h2>
+            <p>Login now and take control of your inventory, sales, and reports.</p>
+            <a href="{% url 'login' %}" class="btn-cta">
+                <i class="bi bi-rocket-takeoff"></i> Get Started Now
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-5 mb-4">
+                <div class="footer-brand">
+                    <i class="bi bi-box-seam"></i> Stock Manager
+                </div>
+                <p>
+                    Complete Stock, Inventory & Sales Management System
+                    for small and medium-sized enterprises.
+                </p>
+            </div>
+            <div class="col-md-3 mb-4">
+                <h6>Quick Links</h6>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how">How It Works</a></li>
+                    <li><a href="#demo">Try Demo</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h6>Project Info</h6>
+                <p><i class="bi bi-mortarboard"></i> Virtual University of Pakistan</p>
+                <p><i class="bi bi-code-slash"></i> Software Engineering Project</p>
+                <p><i class="bi bi-calendar"></i> Spring 2026</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            © 2026 Stock, Inventory & Sales Management System. All rights reserved.
+        </div>
+    </div>
+</footer>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+    // ============================================================
+    // SCROLL REVEAL ANIMATIONS
+    // ============================================================
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+    });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // ============================================================
+    // FAQ TOGGLE
+    // ============================================================
+    function toggleFaq(btn) {
+        const item = btn.parentElement;
+        const wasActive = item.classList.contains('active');
+
+        // Close all FAQs
+        document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('active'));
+
+        // Toggle current
+        if (!wasActive) {
+            item.classList.add('active');
+        }
+    }
+
+    // ============================================================
+    // SMOOTH SCROLL FOR NAV LINKS
+    // ============================================================
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href === '#') return;
+            e.preventDefault();
+            const target = document.querySelector(href);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // ============================================================
+    // STATS COUNTER ANIMATION
+    // ============================================================
+    function animateNumber(element, target, duration = 1500) {
+        const increment = target / (duration / 16);
+        let current = 0;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                element.textContent = target + (element.dataset.suffix || '');
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current) + (element.dataset.suffix || '');
+            }
+        }, 16);
+    }
+
+    const statsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.querySelectorAll('.stat-number').forEach(num => {
+                    const text = num.textContent;
+                    const match = text.match(/(\d+)/);
+                    if (match) {
+                        const targetValue = parseInt(match[1]);
+                        const suffix = text.replace(match[1], '');
+                        num.dataset.suffix = suffix;
+                        animateNumber(num, targetValue);
+                    }
+                });
+                statsObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.3 });
+
+    const statsSection = document.querySelector('.stats-section');
+    if (statsSection) statsObserver.observe(statsSection);
+</script>
+
+</body>
+</html>

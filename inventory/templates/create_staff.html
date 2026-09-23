@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-person-plus-fill text-primary"></i>
+                Create New User
+            </h2>
+            <p class="page-subtitle">Add a new Manager or Salesman account.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'user_list' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back to Users
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-card mb-3">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-person-fill text-primary"></i> Account Information</h5>
+                </div>
+                <div class="form-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-person"></i> First Name</label>
+                                <input type="text" name="first_name" class="form-input-custom" placeholder="e.g., Ahmed">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-person"></i> Last Name</label>
+                                <input type="text" name="last_name" class="form-input-custom" placeholder="e.g., Khan">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-person-badge-fill"></i> Username <span class="required">*</span></label>
+                        <input type="text" name="username" class="form-input-custom" placeholder="e.g., ahmed.khan" required>
+                        <small class="form-hint"><i class="bi bi-info-circle"></i> Unique username for login</small>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-envelope-fill"></i> Email Address</label>
+                        <input type="email" name="email" class="form-input-custom" placeholder="e.g., ahmed@example.com">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-lock-fill"></i> Password <span class="required">*</span></label>
+                        <div style="position: relative;">
+                            <input type="password" name="password" id="passwordInput" class="form-input-custom" placeholder="Min 6 characters" required style="padding-right: 48px;">
+                            <button type="button" onclick="togglePwd()" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #64748b; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;">
+                                <i class="bi bi-eye-fill" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="form-hint"><i class="bi bi-shield-lock"></i> Password will be securely hashed</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card mb-3">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-shield-fill-check text-primary"></i> Role & Permissions</h5>
+                </div>
+                <div class="form-card-body">
+                    <label class="form-label-custom mb-3"><i class="bi bi-person-gear"></i> Select Role <span class="required">*</span></label>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <label style="cursor: pointer; position: relative;">
+                            <input type="radio" name="role" value="Manager" checked style="display: none;" onchange="updateRole()">
+                            <div class="role-option-content" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid #3b82f6; border-radius: 12px; background: #eff6ff; transition: all 0.3s;">
+                                <div class="stat-icon" style="width: 48px; height: 48px; border-radius: 12px; font-size: 1.4rem; background: linear-gradient(135deg, #10b981, #047857); color: #fff;">
+                                    <i class="bi bi-person-badge-fill"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <strong style="display: block; font-size: 0.92rem; color: #1e293b; font-weight: 700; margin-bottom: 2px;">Manager</strong>
+                                    <small style="font-size: 0.75rem; color: #64748b;">Full operations access</small>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label style="cursor: pointer; position: relative;">
+                            <input type="radio" name="role" value="Salesman" style="display: none;" onchange="updateRole()">
+                            <div class="role-option-content" style="display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: all 0.3s;">
+                                <div class="stat-icon" style="width: 48px; height: 48px; border-radius: 12px; font-size: 1.4rem; background: linear-gradient(135deg, #06b6d4, #0e7490); color: #fff;">
+                                    <i class="bi bi-person-workspace"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <strong style="display: block; font-size: 0.92rem; color: #1e293b; font-weight: 700; margin-bottom: 2px;">Salesman</strong>
+                                    <small style="font-size: 0.75rem; color: #64748b;">Sales & customers only</small>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 30px;">
+                <a href="{% url 'user_list' %}" class="btn-cancel"><i class="bi bi-x-circle"></i> Cancel</a>
+                <button type="submit" class="btn-save"><i class="bi bi-check-circle-fill"></i> Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwd() {
+    const input = document.getElementById('passwordInput');
+    const icon = document.getElementById('toggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye-fill');
+        icon.classList.add('bi-eye-slash-fill');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash-fill');
+        icon.classList.add('bi-eye-fill');
+    }
+}
+
+function updateRole() {
+    document.querySelectorAll('.role-option-content').forEach(el => {
+        el.style.borderColor = '#e2e8f0';
+        el.style.background = '#f8fafc';
+    });
+    const checked = document.querySelector('input[name="role"]:checked');
+    if (checked) {
+        const content = checked.nextElementSibling;
+        content.style.borderColor = '#3b82f6';
+        content.style.background = '#eff6ff';
+    }
+}
+</script>
+{% endblock %}

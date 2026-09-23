@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ customer.company_name }} — Details{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-person-badge-fill text-primary"></i>
+                Customer Details
+            </h2>
+            <p class="page-subtitle">{{ customer.company_name }}</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'edit_customer' customer.id %}" class="btn-add-product">
+                <i class="bi bi-pencil-fill"></i> Edit
+            </a>
+            <a href="{% url 'customers' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Profile Card -->
+    <div class="col-md-4">
+        <div class="form-card">
+            <div class="form-card-body" style="text-align: center; padding: 30px 24px;">
+                <div class="stat-icon" style="width: 90px; height: 90px; margin: 0 auto 16px; border-radius: 20px; font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #3b82f6, #1e40af); color: #fff;">
+                    {{ customer.company_name|first|upper }}
+                </div>
+                <h4 style="font-size: 1.3rem; font-weight: 800; color: #1e293b; margin: 0 0 6px;">{{ customer.company_name }}</h4>
+                {% if customer.contact_person %}
+                    <p style="color: #64748b; font-size: 0.9rem; margin: 0 0 8px;">
+                        <i class="bi bi-person"></i> {{ customer.contact_person }}
+                    </p>
+                {% endif %}
+                <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 20px;">
+                    <i class="bi bi-calendar-check"></i> Added {{ customer.created_at|date:"d M Y" }}
+                </p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; padding: 16px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;">{{ customer.invoices.count }}</div>
+                        <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Invoices</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;">{{ currency_symbol }}{{ customer.total_purchases|floatformat:0 }}</div>
+                        <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Spent</div>
+                    </div>
+                </div>
+
+                <div style="text-align: left;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-telephone-fill" style="color: #3b82f6; width: 20px;"></i>
+                        <span>{{ customer.full_phone|default:"—" }}</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-envelope-fill" style="color: #3b82f6; width: 20px;"></i>
+                        <span>{{ customer.email|default:"—" }}</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-geo-alt-fill" style="color: #3b82f6; width: 20px;"></i>
+                        <span>{{ customer.city|default:"—" }}{% if customer.country %}, {{ customer.country }}{% endif %}</span>
+                    </div>
+                    {% if customer.trn %}
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-card-text" style="color: #3b82f6; width: 20px;"></i>
+                        <span>TRN: {{ customer.trn }}</span>
+                    </div>
+                    {% endif %}
+                    {% if customer.address %}
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-house-fill" style="color: #3b82f6; width: 20px;"></i>
+                        <span>{{ customer.address }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="col-md-8">
+        <div class="products-card">
+            <div class="products-card-header">
+                <h5 class="products-card-title">
+                    <i class="bi bi-receipt text-primary"></i>
+                    Transaction History
+                    <span class="products-count">{{ invoices|length }} invoices</span>
+                </h5>
+            </div>
+            <div class="products-card-body p-0">
+                {% if invoices %}
+                    <div class="table-responsive">
+                        <table class="modern-inv-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in invoices %}
+                                <tr>
+                                    <td><span class="invoice-badge"><i class="bi bi-hash"></i> {{ inv.invoice_number|truncatechars:20 }}</span></td>
+                                    <td>
+                                        <strong style="color: #1e293b; font-size: 0.85rem;">{{ inv.created_at|date:"d M Y" }}</strong>
+                                        <small style="color: #94a3b8; display: block; font-size: 0.72rem;">{{ inv.created_at|date:"H:i" }}</small>
+                                    </td>
+                                    <td class="text-end"><span class="amount-badge">{{ currency_symbol }}{{ inv.grand_total|floatformat:2 }}</span></td>
+                                    <td class="text-center">
+                                        {% if inv.payment_status == 'PAID' %}
+                                            <span class="status-pill status-available"><i class="bi bi-check-circle-fill"></i> Paid</span>
+                                        {% elif inv.payment_status == 'UNPAID' %}
+                                            <span class="status-pill status-out"><i class="bi bi-x-circle-fill"></i> Unpaid</span>
+                                        {% else %}
+                                            <span class="status-pill status-low"><i class="bi bi-hourglass-split"></i> Partial</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'invoice_detail' inv.id %}" class="action-btn action-primary" title="View"><i class="bi bi-eye-fill"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-inventory">
+                        <i class="bi bi-receipt"></i>
+                        <h5>No Transactions Yet</h5>
+                        <p>This customer has no invoices.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

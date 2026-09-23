@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Edit {{ customer.company_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-pencil-square text-primary"></i>
+                Edit Customer
+            </h2>
+            <p class="page-subtitle">{{ customer.company_name }}</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'customers' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="form-card" style="max-width: 800px; margin: 0 auto;">
+    <div class="form-card-header">
+        <h5 class="form-card-title"><i class="bi bi-person-fill text-primary"></i> Customer Information</h5>
+    </div>
+    <div class="form-card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-building"></i> Company Name <span class="required">*</span></label>
+                        <input type="text" name="company_name" class="form-input-custom" value="{{ customer.company_name }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-person"></i> Contact Person</label>
+                        <input type="text" name="contact_person" class="form-input-custom" value="{{ customer.contact_person }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-globe"></i> Country Code <span class="required">*</span></label>
+                        <select name="country_code" class="form-input-custom">
+                            <option value="+92" {% if customer.country_code == '+92' %}selected{% endif %}>🇵🇰 Pakistan (+92)</option>
+                            <option value="+971" {% if customer.country_code == '+971' %}selected{% endif %}>🇦🇪 UAE (+971)</option>
+                            <option value="+966" {% if customer.country_code == '+966' %}selected{% endif %}>🇸🇦 Saudi (+966)</option>
+                            <option value="+974" {% if customer.country_code == '+974' %}selected{% endif %}>🇶🇦 Qatar (+974)</option>
+                            <option value="+965" {% if customer.country_code == '+965' %}selected{% endif %}>🇰🇼 Kuwait (+965)</option>
+                            <option value="+1" {% if customer.country_code == '+1' %}selected{% endif %}>🇺🇸 USA (+1)</option>
+                            <option value="+44" {% if customer.country_code == '+44' %}selected{% endif %}>🇬🇧 UK (+44)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-telephone-fill"></i> Phone <span class="required">*</span></label>
+                        <input type="text" name="phone" class="form-input-custom" value="{{ customer.phone }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-envelope-fill"></i> Email</label>
+                        <input type="email" name="email" class="form-input-custom" value="{{ customer.email }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-geo-alt-fill"></i> City</label>
+                        <input type="text" name="city" class="form-input-custom" value="{{ customer.city }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-globe2"></i> Country</label>
+                        <input type="text" name="country" class="form-input-custom" value="{{ customer.country }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-card-text"></i> TRN</label>
+                        <input type="text" name="trn" class="form-input-custom" value="{{ customer.trn }}">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-house-fill"></i> Address</label>
+                        <textarea name="address" class="form-input-custom" rows="2">{{ customer.address }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                <a href="{% url 'customers' %}" class="btn-cancel"><i class="bi bi-x-circle"></i> Cancel</a>
+                <button type="submit" class="btn-save"><i class="bi bi-check-circle-fill"></i> Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

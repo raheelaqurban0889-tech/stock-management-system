@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if edit %}Edit Product{% else %}Add Product{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-{% if edit %}pencil-square{% else %}plus-circle-fill{% endif %} text-primary"></i>
+                {% if edit %}Edit Product{% else %}Add New Product{% endif %}
+            </h2>
+            <p class="page-subtitle">
+                {% if edit %}Update details for "{{ product.name }}"{% else %}Register a new product with pricing, stock, and category details.{% endif %}
+            </p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'inventory_list' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back to Inventory
+            </a>
+            {% if edit %}
+            <a href="{% url 'print_barcode_labels' product.id %}" target="_blank" class="btn-add-product">
+                <i class="bi bi-upc"></i> Print Label
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="productForm">
+    {% csrf_token %}
+    <div class="row g-3">
+
+        <!-- LEFT: Main Details -->
+        <div class="col-lg-8">
+
+            <div class="form-card mb-3">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-info-circle-fill text-primary"></i> Basic Information</h5>
+                </div>
+                <div class="form-card-body">
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-tag-fill"></i> Product Name <span class="required">*</span></label>
+                        {{ form.name }}
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-upc"></i> SKU Code</label>
+                                {{ form.sku }}
+                                <small class="form-hint"><i class="bi bi-info-circle"></i> Leave blank to auto-generate</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-upc-scan"></i> Barcode</label>
+                                {{ form.barcode }}
+                                <small class="form-hint"><i class="bi bi-magic"></i> Auto-generated if blank</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-tags-fill"></i> Category</label>
+                                {{ form.category }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-building"></i> Supplier</label>
+                                {{ form.supplier }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-file-text"></i> Description</label>
+                        {{ form.description }}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-currency-dollar text-success"></i> Pricing & Stock</h5>
+                </div>
+                <div class="form-card-body">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-cart-plus"></i> Purchase Price</label>
+                                <div style="position: relative;">
+                                    <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 700; z-index: 2;">{{ currency_symbol }}</span>
+                                    <input type="number" name="purchase_price" class="form-input-custom" step="0.01" value="{{ form.purchase_price.value|default:0 }}" style="padding-left: 36px; font-family: monospace; font-weight: 700;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-tag-fill"></i> Selling Price <span class="required">*</span></label>
+                                <div style="position: relative;">
+                                    <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 700; z-index: 2;">{{ currency_symbol }}</span>
+                                    <input type="number" name="price" class="form-input-custom" step="0.01" value="{{ form.price.value|default:0 }}" style="padding-left: 36px; font-family: monospace; font-weight: 700;" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-box-seam"></i> Initial Quantity <span class="required">*</span></label>
+                                <input type="number" name="quantity" class="form-input-custom" value="{{ form.quantity.value|default:0 }}" required>
+                                <small class="form-hint"><i class="bi bi-info-circle"></i> Current stock</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-exclamation-triangle-fill"></i> Low Stock Threshold</label>
+                                <input type="number" name="low_stock_threshold" class="form-input-custom" value="{{ form.low_stock_threshold.value|default:10 }}">
+                                <small class="form-hint"><i class="bi bi-bell"></i> Alert when stock ≤ this</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-rulers"></i> Unit</label>
+                        <input type="text" name="unit" class="form-input-custom" value="{{ form.unit.value|default:'Piece' }}">
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: Image + Actions -->
+        <div class="col-lg-4">
+
+            <div class="form-card mb-3">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-image-fill text-primary"></i> Product Image</h5>
+                </div>
+                <div class="form-card-body">
+                    <div id="imageZone" style="position: relative; width: 100%; aspect-ratio: 1; max-height: 280px; border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; overflow: hidden;">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="Product" id="imagePreview" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <div id="imagePlaceholder" style="text-align: center; color: #64748b; padding: 20px;">
+                                <i class="bi bi-cloud-arrow-up-fill" style="font-size: 3rem; color: #3b82f6; display: block; margin-bottom: 10px; opacity: 0.6;"></i>
+                                <p style="margin: 0 0 4px; font-weight: 700; color: #1e293b; font-size: 0.95rem;">Click to upload</p>
+                                <small style="font-size: 0.75rem; color: #94a3b8;">PNG, JPG up to 5MB</small>
+                            </div>
+                            <img src="" alt="" id="imagePreview" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                        {% endif %}
+                    </div>
+                    <input type="file" name="image" id="imageInput" accept="image/*" style="display: none;">
+                    <small class="form-hint" style="margin-top: 8px;"><i class="bi bi-info-circle"></i> Recommended: 800×800px</small>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-check2-square text-primary"></i> Save Changes</h5>
+                </div>
+                <div class="form-card-body">
+                    <button type="submit" class="btn-save" style="width: 100%; justify-content: center; padding: 14px; margin-bottom: 10px;">
+                        <i class="bi bi-check-circle-fill"></i> {% if edit %}Update Product{% else %}Add Product{% endif %}
+                    </button>
+                    <a href="{% url 'inventory_list' %}" class="btn-cancel" style="width: 100%; justify-content: center;">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    {% if not edit %}
+                    <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 8px; font-size: 0.82rem; color: #1e40af; margin-top: 16px; display: flex; gap: 10px;">
+                        <i class="bi bi-info-circle-fill" style="color: #3b82f6; font-size: 1.1rem;"></i>
+                        <div><strong>Auto-generated:</strong> SKU, Barcode & QR will be created automatically.</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const zone = document.getElementById('imageZone');
+    const fileInput = document.getElementById('imageInput');
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('imagePlaceholder');
+
+    if (zone && fileInput) {
+        zone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.src = ev.target.result;
+                    preview.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

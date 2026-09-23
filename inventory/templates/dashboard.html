@@ -1,0 +1,258 @@
+
+{% extends 'base.html' %}
+
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+    <div class="welcome-content">
+        <div>
+            <h2 class="welcome-title">
+                <i class="bi bi-hand-thumbs-up-fill text-warning"></i>
+                Welcome back, <span class="text-info">{{ user.username }}</span>!
+            </h2>
+            <p class="welcome-subtitle">
+                Here's what's happening with your business today.
+            </p>
+        </div>
+        <div class="welcome-actions">
+            <a href="{% url 'create_invoice' %}" class="btn-banner">
+                <i class="bi bi-plus-circle"></i> New Invoice
+            </a>
+            <a href="{% url 'add_inventory' %}" class="btn-banner-outline">
+                <i class="bi bi-box-seam"></i> Add Product
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Sales</p>
+                <h3 class="stat-value">{{ currency_symbol }}{{ total_sales|floatformat:0 }}</h3>
+                <small class="stat-hint">
+                    <i class="bi bi-graph-up-arrow"></i> Today: {{ currency_symbol }}{{ today_sales|floatformat:0 }}
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Products</p>
+                <h3 class="stat-value">{{ total_products }}</h3>
+                <small class="stat-hint">
+                    <i class="bi bi-archive"></i> Stock: {{ total_stock }} units
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Low Stock</p>
+                <h3 class="stat-value">{{ low_stock_count }}</h3>
+                <small class="stat-hint">
+                    <i class="bi bi-bell"></i> Needs attention
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-red">
+            <div class="stat-icon"><i class="bi bi-x-octagon-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Out of Stock</p>
+                <h3 class="stat-value">{{ out_of_stock_count }}</h3>
+                <small class="stat-hint">
+                    <i class="bi bi-exclamation-circle"></i> Urgent
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart + Top Products -->
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <div>
+                    <h5 class="card-title-dash">
+                        <i class="bi bi-graph-up-arrow text-primary"></i>
+                        Monthly Sales Overview
+                    </h5>
+                    <small class="text-muted">Last 6 months performance</small>
+                </div>
+                <span class="badge-period">Last 6 Months</span>
+            </div>
+            <div class="dashboard-card-body">
+                <canvas id="salesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="card-title-dash">
+                    <i class="bi bi-trophy-fill text-warning"></i>
+                    Top Selling Products
+                </h5>
+            </div>
+            <div class="dashboard-card-body">
+                {% if top_products %}
+                    <div class="top-products-list">
+                        {% for p in top_products %}
+                        <div class="top-product-item">
+                            <div class="rank-badge rank-{{ forloop.counter }}">{{ forloop.counter }}</div>
+                            <div class="product-info">
+                                <strong>{{ p.product__name|truncatechars:20 }}</strong>
+                                <small>{{ p.total_qty }} units sold</small>
+                            </div>
+                            <div class="product-revenue">{{ currency_symbol }}{{ p.total_revenue|floatformat:0 }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state-small">
+                        <i class="bi bi-inbox"></i>
+                        <p>No sales data yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Invoices + Low Stock -->
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h5 class="card-title-dash">
+                    <i class="bi bi-clock-history text-info"></i>
+                    Recent Invoices
+                </h5>
+                <a href="{% url 'invoice_list' %}" class="btn-view-all">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="dashboard-card-body p-0">
+                {% if recent_invoices %}
+                    <div class="table-responsive">
+                        <table class="modern-inv-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in recent_invoices %}
+                                <tr onclick="window.location='{% url 'invoice_detail' inv.id %}'" style="cursor:pointer;">
+                                    <td><strong class="text-primary">{{ inv.invoice_number }}</strong></td>
+                                    <td>{{ inv.customer.company_name|default:inv.customer_name|default:"Walk-in"|truncatechars:18 }}</td>
+                                    <td><strong>{{ currency_symbol }}{{ inv.grand_total|floatformat:2 }}</strong></td>
+                                    <td><small>{{ inv.created_at|date:"d M, H:i" }}</small></td>
+                                    <td>
+                                        <span class="status-pill status-{{ inv.payment_status|lower }}">
+                                            {{ inv.payment_status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-small">
+                        <i class="bi bi-receipt"></i>
+                        <p>No invoices yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h5 class="card-title-dash">
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                    Low Stock Alerts
+                </h5>
+                <a href="{% url 'low_stock' %}" class="btn-view-all">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="dashboard-card-body p-0">
+                {% if low_stock %}
+                    <div class="alert-list">
+                        {% for p in low_stock %}
+                        <div class="alert-item">
+                            <div class="alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                            <div class="alert-content">
+                                <strong>{{ p.name|truncatechars:22 }}</strong>
+                                <small>Only <strong>{{ p.quantity }}</strong> left</small>
+                            </div>
+                            <a href="{% url 'add_stock' p.id %}" class="btn-restock">
+                                <i class="bi bi-plus"></i> Restock
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state-small">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <p class="text-success">All products have sufficient stock!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Sales',
+                data: {{ chart_data|safe }},
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

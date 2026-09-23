@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Stock Management System{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+     .sidebar {
+    height: 100vh;                 /* ✅ Viewport height */
+    max-height: 100vh;             /* ✅ Max height */
+    background: #1e293b;
+    color: #fff;
+    position: fixed;
+    top: 0; left: 0;
+    width: 250px;
+    padding-top: 0;
+    overflow-y: auto;              /* ✅ Vertical scroll enable */
+    overflow-x: hidden;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    scrollbar-width: thin;         /* Firefox */
+    scrollbar-color: #475569 #1e293b;
+}
+
+/* Custom scrollbar (Chrome, Edge, Safari) */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+        .sidebar .brand {
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding: 18px 20px;
+            border-bottom: 1px solid #334155;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sidebar .brand-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar .brand-left i {
+            color: #3b82f6;
+            font-size: 1.5rem;
+        }
+        .sidebar .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: none;
+        }
+        .sidebar .close-btn:hover {
+            color: #fff;
+            background: #334155;
+        }
+        .sidebar a {
+            color: #cbd5e1;
+            padding: 12px 22px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+            font-size: 0.94rem;
+        }
+        .sidebar a i {
+            font-size: 1.1rem;
+            width: 22px;
+            text-align: center;
+        }
+        .sidebar a:hover {
+            background: #334155;
+            color: #fff;
+            border-left-color: #60a5fa;
+        }
+        .sidebar a.active {
+            background: #334155;
+            color: #ffffff;
+            border-left-color: #3b82f6;
+            font-weight: 600;
+        }
+        .sidebar a.active i {
+            color: #3b82f6;
+        }
+
+        /* LOGOUT */
+        .sidebar .logout-section {
+            margin-top: 15px;
+            border-top: 1px solid #334155;
+            padding: 8px 0;
+        }
+        .sidebar .logout-link {
+            color: #f87171 !important;
+        }
+        .sidebar .logout-link:hover {
+            background: #7f1d1d !important;
+            color: #ffffff !important;
+            border-left-color: #ef4444 !important;
+        }
+
+        /* ============ MAIN CONTENT ============ */
+        .main-content {
+            margin-left: 250px;
+            padding: 0;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* ============ TOPBAR — MATCHES SIDEBAR COLOR ============ */
+        .topbar {
+            background: #1e293b;                    /* Same as sidebar */
+            color: #fff;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #334155;
+        }
+        .menu-toggle {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.15rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .menu-toggle:hover {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+        .topbar .search-input {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #fff;
+            border-radius: 8px;
+        }
+        .topbar .search-input::placeholder {
+            color: #94a3b8;
+        }
+        .topbar .search-input:focus {
+            background: #334155;
+            border-color: #3b82f6;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .topbar .search-btn {
+            background: #3b82f6;
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            padding: 8px 16px;
+        }
+        .topbar .search-btn:hover {
+            background: #2563eb;
+        }
+        .topbar .notif-btn {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 12px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .topbar .notif-btn:hover {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+        .topbar .user-badge {
+            background: #3b82f6;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: lowercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ============ CONTENT AREA ============ */
+        .content-area {
+            padding: 20px;
+        }
+
+        /* ============ STAT CARDS ============ */
+        .stat-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 1.8rem; font-weight: 700; margin: 8px 0; }
+        .stat-card p { color: #64748b; margin: 0; font-size: 0.9rem; }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+                transform: translateX(-100%);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar .close-btn {
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+{% if user.is_authenticated %}
+{% with current=request.resolver_match.url_name %}
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar" id="sidebar">
+    <div class="brand">
+        <div class="brand-left">
+            <i class="bi bi-box-seam"></i>
+            <span>Stock Manager</span>
+        </div>
+        <button class="close-btn" onclick="toggleSidebar()" title="Close">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <a href="{% url 'dashboard' %}" class="{% if current == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <a href="{% url 'inventory_list' %}" class="{% if current == 'inventory_list' or current == 'add_inventory' or current == 'edit_inventory' or current == 'add_stock' or current == 'stock_history' or current == 'low_stock' %}active{% endif %}">
+        <i class="bi bi-boxes"></i> Inventory
+    </a>
+
+    <a href="{% url 'stock_entries' %}" class="{% if current == 'stock_entries' or current == 'create_stock_entry' %}active{% endif %}">
+        <i class="bi bi-truck"></i> Stock Entries
+    </a>
+
+    <a href="{% url 'invoice_list' %}" class="{% if current == 'invoice_list' or current == 'create_invoice' or current == 'invoice_detail' %}active{% endif %}">
+        <i class="bi bi-receipt"></i> Invoices
+    </a>
+
+    <a href="{% url 'returns' %}" class="{% if current == 'returns' %}active{% endif %}">
+        <i class="bi bi-arrow-return-left"></i> Returns
+    </a>
+
+    <a href="{% url 'customers' %}" class="{% if current == 'customers' or current == 'customer_detail' or current == 'edit_customer' %}active{% endif %}">
+        <i class="bi bi-people"></i> Customers
+    </a>
+
+    <a href="{% url 'suppliers' %}" class="{% if current == 'suppliers' or current == 'supplier_detail' or current == 'edit_supplier' %}active{% endif %}">
+        <i class="bi bi-building"></i> Suppliers
+    </a>
+
+    <a href="{% url 'scan_barcode' %}" class="{% if current == 'scan_barcode' %}active{% endif %}">
+        <i class="bi bi-upc-scan"></i> Scan Barcode
+    </a>
+
+    <a href="{% url 'reports' %}" class="{% if current == 'reports' %}active{% endif %}">
+        <i class="bi bi-graph-up"></i> Reports
+    </a>
+
+    {% if user.is_superuser %}
+    <a href="{% url 'user_list' %}" class="{% if current == 'user_list' or current == 'create_staff' %}active{% endif %}">
+        <i class="bi bi-person-gear"></i> Users
+    </a>
+
+    <a href="{% url 'activity_logs' %}" class="{% if current == 'activity_logs' %}active{% endif %}">
+        <i class="bi bi-clock-history"></i> Activity Logs
+    </a>
+
+    <a href="{% url 'backup_data' %}" class="{% if current == 'backup_data' %}active{% endif %}">
+        <i class="bi bi-download"></i> Backup
+    </a>
+    {% endif %}
+
+    <!-- ✅ LOGOUT -->
+    <div class="logout-section">
+        <a href="{% url 'logout' %}" class="logout-link">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </div>
+</aside>
+
+{% endwith %}
+{% endif %}
+
+<!-- ============ MAIN CONTENT ============ -->
+<div class="{% if user.is_authenticated %}main-content{% else %}container mt-4{% endif %}" id="mainContent">
+
+    {% if user.is_authenticated %}
+    <!-- ============ TOPBAR (Same color as sidebar) ============ -->
+    <div class="topbar">
+        <div class="d-flex align-items-center flex-grow-1" style="gap: 12px;">
+            <button class="menu-toggle" onclick="toggleSidebar()" title="Toggle Sidebar (Ctrl+B)">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <form method="get" action="{% url 'global_search' %}" class="d-flex flex-grow-1" style="max-width: 600px;">
+                <input type="text" name="q" class="form-control search-input me-2"
+                       placeholder="Search products, customers, invoices...">
+                <button class="search-btn" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+
+        <div class="d-flex align-items-center" style="gap: 12px;">
+            <a href="{% url 'notifications' %}" class="notif-btn" title="Notifications">
+                <i class="bi bi-bell"></i>
+            </a>
+            <span class="user-badge">
+                <i class="bi bi-person-circle"></i>
+                {{ user.username }}
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ============ CONTENT AREA ============ -->
+    <div class="content-area">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ============================================================
+    // SIDEBAR TOGGLE
+    // ============================================================
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        if (!sidebar) return;
+
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('mobile-open');
+        } else {
+            sidebar.classList.toggle('hidden');
+            if (mainContent) mainContent.classList.toggle('expanded');
+            localStorage.setItem('sidebarHidden', sidebar.classList.contains('hidden'));
+        }
+    }
+
+    // Restore state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        if (!sidebar) return;
+
+        if (window.innerWidth > 768) {
+            if (localStorage.getItem('sidebarHidden') === 'true') {
+                sidebar.classList.add('hidden');
+                if (mainContent) mainContent.classList.add('expanded');
+            }
+        }
+    });
+
+    // Keyboard shortcut: Ctrl + B
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+            e.preventDefault();
+            toggleSidebar();
+        }
+    });
+</script>
+
+{% block scripts %}{% endblock %}
+<script>
+// ============================================================
+// LIVE NOTIFICATIONS — Polling every 30 seconds
+// ============================================================
+{% if user.is_authenticated %}
+function checkNotifications() {
+    fetch('/notifications/count/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.count > 0) {
+                // Update bell icon badge
+                const bell = document.querySelector('.notif-btn');
+                if (bell) {
+                    let badge = bell.querySelector('.notif-badge');
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'notif-badge';
+                        badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: 700;';
+                        bell.style.position = 'relative';
+                        bell.appendChild(badge);
+                    }
+                    badge.textContent = data.count;
+                }
+            }
+        })
+        .catch(err => console.log('Notification check failed'));
+}
+
+// Check every 30 seconds
+setInterval(checkNotifications, 30000);
+checkNotifications(); // Initial check
+{% endif %}
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ supplier.company_name }} — Details{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-building-fill text-primary"></i>
+                Supplier Details
+            </h2>
+            <p class="page-subtitle">{{ supplier.company_name }}</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'edit_supplier' supplier.id %}" class="btn-add-product">
+                <i class="bi bi-pencil-fill"></i> Edit
+            </a>
+            <a href="{% url 'suppliers' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <div class="col-md-4">
+        <div class="form-card">
+            <div class="form-card-body" style="text-align: center; padding: 30px 24px;">
+                <div class="stat-icon" style="width: 90px; height: 90px; margin: 0 auto 16px; border-radius: 20px; font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff;">
+                    {{ supplier.company_name|first|upper }}
+                </div>
+                <h4 style="font-size: 1.3rem; font-weight: 800; color: #1e293b; margin: 0 0 6px;">{{ supplier.company_name }}</h4>
+                {% if supplier.contact_person %}
+                    <p style="color: #64748b; font-size: 0.9rem; margin: 0 0 8px;">
+                        <i class="bi bi-person"></i> {{ supplier.contact_person }}
+                    </p>
+                {% endif %}
+                <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 20px;">
+                    <i class="bi bi-calendar-check"></i> Added {{ supplier.created_at|date:"d M Y" }}
+                </p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; padding: 16px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6;">{{ supplier.stock_entries.count }}</div>
+                        <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Purchases</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6;">{{ currency_symbol }}{{ supplier.total_purchases|floatformat:0 }}</div>
+                        <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Total Spent</div>
+                    </div>
+                </div>
+
+                <div style="text-align: left;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-telephone-fill" style="color: #8b5cf6; width: 20px;"></i>
+                        <span>{{ supplier.full_phone|default:"—" }}</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-envelope-fill" style="color: #8b5cf6; width: 20px;"></i>
+                        <span>{{ supplier.email|default:"—" }}</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-geo-alt-fill" style="color: #8b5cf6; width: 20px;"></i>
+                        <span>{{ supplier.city|default:"—" }}{% if supplier.country %}, {{ supplier.country }}{% endif %}</span>
+                    </div>
+                    {% if supplier.trn %}
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-card-text" style="color: #8b5cf6; width: 20px;"></i>
+                        <span>TRN: {{ supplier.trn }}</span>
+                    </div>
+                    {% endif %}
+                    {% if supplier.address %}
+                    <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 0.88rem; color: #475569;">
+                        <i class="bi bi-house-fill" style="color: #8b5cf6; width: 20px;"></i>
+                        <span>{{ supplier.address }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="products-card">
+            <div class="products-card-header">
+                <h5 class="products-card-title">
+                    <i class="bi bi-truck text-primary"></i>
+                    Purchase History
+                    <span class="products-count">{{ entries|length }} entries</span>
+                </h5>
+            </div>
+            <div class="products-card-body p-0">
+                {% if entries %}
+                    <div class="table-responsive">
+                        <table class="modern-inv-table">
+                            <thead>
+                                <tr>
+                                    <th>PO #</th>
+                                    <th>Date</th>
+                                    <th class="text-center">Items</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for e in entries %}
+                                <tr>
+                                    <td><span class="invoice-badge"><i class="bi bi-hash"></i> {{ e.purchase_invoice_no }}</span></td>
+                                    <td>
+                                        <strong style="color: #1e293b; font-size: 0.85rem;">{{ e.entry_date|date:"d M Y" }}</strong>
+                                        <small style="color: #94a3b8; display: block; font-size: 0.72rem;">{{ e.created_at|date:"H:i" }}</small>
+                                    </td>
+                                    <td class="text-center"><span class="category-chip"><i class="bi bi-box"></i> {{ e.items.count }}</span></td>
+                                    <td class="text-end"><span class="amount-badge">{{ currency_symbol }}{{ e.total_amount|floatformat:2 }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-inventory">
+                        <i class="bi bi-truck"></i>
+                        <h5>No Purchase History</h5>
+                        <p>This supplier has no purchase entries yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

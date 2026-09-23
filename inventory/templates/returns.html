@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Returns{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-arrow-return-left text-primary"></i>
+                Return Management
+            </h2>
+            <p class="page-subtitle">Process customer returns and restore stock automatically.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'invoice_list' %}" class="btn-secondary-action">
+                <i class="bi bi-receipt"></i> Invoices
+            </a>
+            <a href="{% url 'inventory_list' %}" class="btn-secondary-action">
+                <i class="bi bi-boxes"></i> Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-arrow-return-left"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Returns</p>
+                <h3 class="stat-value">{{ returns_list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Refunded</p>
+                <h3 class="stat-value">{{ currency_symbol }}{{ total_refund|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Resellable</p>
+                <h3 class="stat-value">{{ resellable_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-red">
+            <div class="stat-icon"><i class="bi bi-x-octagon-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Damaged</p>
+                <h3 class="stat-value">{{ damaged_count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Process Return Form -->
+    <div class="col-lg-5">
+        <div class="form-card">
+            <div class="form-card-header">
+                <h5 class="form-card-title"><i class="bi bi-plus-circle-fill text-primary"></i> Process New Return</h5>
+            </div>
+            <div class="form-card-body">
+                <form method="post" id="returnForm">
+                    {% csrf_token %}
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-receipt"></i> Select Invoice <span class="required">*</span></label>
+                        <select name="invoice_id" class="form-input-custom" required>
+                            <option value="">-- Choose Invoice --</option>
+                            {% for inv in invoices %}
+                                <option value="{{ inv.id }}">
+                                    {{ inv.invoice_number }} — {{ inv.customer.company_name|default:inv.customer_name|default:"Walk-in" }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-box-seam"></i> Product <span class="required">*</span></label>
+                        <select name="product_id" class="form-input-custom" required>
+                            <option value="">-- Select Product --</option>
+                            {% for p in products %}
+                                <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-hash"></i> Quantity</label>
+                                <input type="number" name="quantity" class="form-input-custom" min="1" value="1" required>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-clipboard-check"></i> Condition</label>
+                                <select name="condition" class="form-input-custom">
+                                    <option value="RESELLABLE">✅ Resellable</option>
+                                    <option value="DAMAGED">❌ Damaged</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-chat-left-text"></i> Reason</label>
+                        <textarea name="reason" class="form-input-custom" rows="3" placeholder="e.g., Customer changed mind..."></textarea>
+                    </div>
+
+                    <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; color: #1e40af; margin-bottom: 18px; display: flex; gap: 10px;">
+                        <i class="bi bi-info-circle-fill" style="color: #3b82f6; font-size: 1.1rem;"></i>
+                        <div><strong>Note:</strong> Resellable items are automatically added back to stock.</div>
+                    </div>
+
+                    <button type="submit" class="btn-save" style="width: 100%; justify-content: center; padding: 14px;">
+                        <i class="bi bi-arrow-counterclockwise"></i> Process Return
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return History -->
+    <div class="col-lg-7">
+        <div class="form-card">
+            <div class="form-card-header">
+                <h5 class="form-card-title">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    Return History
+                    <span class="products-count">{{ returns_list|length }} records</span>
+                </h5>
+            </div>
+            <div class="form-card-body p-0">
+                {% if returns_list %}
+                    <div style="max-height: 600px; overflow-y: auto;">
+                        {% for r in returns_list %}
+                        <div style="display: flex; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
+                            <div class="stat-icon" style="width: 46px; height: 46px; border-radius: 12px; font-size: 1.3rem; flex-shrink: 0; {% if r.condition == 'RESELLABLE' %}background: #ecfdf5; color: #10b981;{% else %}background: #fef2f2; color: #ef4444;{% endif %}">
+                                {% if r.condition == 'RESELLABLE' %}
+                                    <i class="bi bi-arrow-repeat"></i>
+                                {% else %}
+                                    <i class="bi bi-x-octagon"></i>
+                                {% endif %}
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                                    <strong style="color: #1e293b;">{{ r.product.name|truncatechars:28 }}</strong>
+                                    <span class="amount-badge">{{ currency_symbol }}{{ r.refund_amount }}</span>
+                                </div>
+                                <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.78rem; color: #64748b; margin-bottom: 6px;">
+                                    <span><i class="bi bi-receipt"></i> {{ r.invoice.invoice_number }}</span>
+                                    <span><i class="bi bi-box"></i> Qty: {{ r.quantity }}</span>
+                                    {% if r.condition == 'RESELLABLE' %}
+                                        <span class="status-pill status-available" style="font-size: 0.65rem; padding: 3px 8px;">
+                                            <i class="bi bi-check-circle-fill"></i> Resellable
+                                        </span>
+                                    {% else %}
+                                        <span class="status-pill status-out" style="font-size: 0.65rem; padding: 3px 8px;">
+                                            <i class="bi bi-x-circle-fill"></i> Damaged
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                {% if r.reason %}
+                                    <div style="font-size: 0.82rem; color: #475569; padding: 8px 12px; background: #f8fafc; border-radius: 8px; margin-top: 6px;">
+                                        <i class="bi bi-chat-left-text" style="color: #94a3b8;"></i> {{ r.reason|truncatechars:60 }}
+                                    </div>
+                                {% endif %}
+                                <div style="display: flex; gap: 16px; margin-top: 8px;">
+                                    <small style="color: #94a3b8; font-size: 0.75rem;">
+                                        <i class="bi bi-clock"></i> {{ r.returned_at|date:"d M Y, H:i" }}
+                                    </small>
+                                    {% if r.processed_by %}
+                                        <small style="color: #94a3b8; font-size: 0.75rem;">
+                                            <i class="bi bi-person-fill"></i> {{ r.processed_by.username }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state-inventory">
+                        <i class="bi bi-inbox"></i>
+                        <h5>No Returns Yet</h5>
+                        <p>Processed returns will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

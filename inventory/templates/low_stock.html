@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Low Stock Items{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                Low Stock Items
+            </h2>
+            <p class="page-subtitle">{{ products|length }} product(s) need restocking.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'inventory_list' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back to Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if products %}
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            Low Stock Products
+            <span class="products-count">{{ products|length }} items</span>
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        <div class="table-responsive">
+            <table class="modern-inv-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th style="width: 130px;">Category</th>
+                        <th style="width: 130px;" class="text-center">Current Stock</th>
+                        <th style="width: 130px;" class="text-center">Threshold</th>
+                        <th style="width: 160px;">Supplier</th>
+                        <th style="width: 130px;" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products %}
+                    <tr style="{% if p.quantity <= 0 %}background: #fef2f2;{% else %}background: #fffbeb;{% endif %}">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="stat-icon" style="width: 40px; height: 40px; border-radius: 10px; font-size: 1.1rem; background: linear-gradient(135deg, #3b82f6, #1e40af); color: #fff;">
+                                    <i class="bi bi-box-seam"></i>
+                                </div>
+                                <div>
+                                    <strong style="color: #1e293b;">{{ p.name }}</strong>
+                                    {% if p.sku %}
+                                        <small style="color: #64748b; display: block; font-family: monospace; font-size: 0.72rem;">{{ p.sku }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if p.category %}
+                                <span class="category-chip">{{ p.category.name }}</span>
+                            {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if p.quantity <= 0 %}
+                                <span class="status-pill status-out"><i class="bi bi-x-circle-fill"></i> 0 {{ p.unit }}</span>
+                            {% else %}
+                                <span class="status-pill status-low"><i class="bi bi-exclamation-triangle-fill"></i> {{ p.quantity }} {{ p.unit }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center"><strong style="font-family: monospace; color: #1e293b;">{{ p.low_stock_threshold }}</strong></td>
+                        <td>
+                            {% if p.supplier %}
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ p.supplier.company_name|truncatechars:20 }}</strong>
+                            {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'add_stock' p.id %}" class="btn-add-product" style="padding: 6px 14px; font-size: 0.82rem;">
+                                <i class="bi bi-plus-circle"></i> Restock
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="products-card">
+    <div class="products-card-body">
+        <div class="empty-state-inventory" style="padding: 100px 20px;">
+            <i class="bi bi-check-circle-fill text-success" style="opacity: 0.8;"></i>
+            <h5 style="color: #059669;">All Products Have Sufficient Stock!</h5>
+            <p>No low stock items found.</p>
+            <a href="{% url 'inventory_list' %}" class="btn-empty-action">
+                <i class="bi bi-boxes"></i> View Inventory
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

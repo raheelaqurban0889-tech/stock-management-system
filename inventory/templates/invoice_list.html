@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Invoices{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-receipt text-primary"></i>
+                Sales Invoices
+            </h2>
+            <p class="page-subtitle">Manage all customer invoices and payment status.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'create_invoice' %}" class="btn-add-product">
+                <i class="bi bi-plus-circle-fill"></i> New Invoice
+            </a>
+            <a href="{% url 'customers' %}" class="btn-secondary-action">
+                <i class="bi bi-people"></i> Customers
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Invoices</p>
+                <h3 class="stat-value">{{ total_invoices }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Sales</p>
+                <h3 class="stat-value">{{ currency_symbol }}{{ total_sales|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Paid</p>
+                <h3 class="stat-value">{{ paid_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Today</p>
+                <h3 class="stat-value">{{ today_count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-search"></i> Search</label>
+            <input type="text" name="q" class="filter-input" placeholder="Invoice #, Customer name..." value="{{ query }}">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter-apply"><i class="bi bi-search"></i> Search</button>
+            <a href="{% url 'invoice_list' %}" class="btn-filter-reset"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Invoices Table -->
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            All Invoices
+            <span class="products-count">{{ invoices|length }} records</span>
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if invoices %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">Invoice #</th>
+                            <th>Customer</th>
+                            <th style="width: 130px;">Date</th>
+                            <th style="width: 120px;" class="text-end">Amount</th>
+                            <th style="width: 110px;" class="text-center">Payment</th>
+                            <th style="width: 130px;" class="text-center">Status</th>
+                            <th style="width: 150px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invoices %}
+                        <tr>
+                            <td><span class="invoice-badge"><i class="bi bi-hash"></i> {{ inv.invoice_number|truncatechars:20 }}</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="stat-icon" style="width: 36px; height: 36px; border-radius: 50%; font-size: 0.9rem; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #1e40af); color: #fff;">
+                                        {{ inv.customer.company_name|first|default:"W"|upper }}
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ inv.customer.company_name|default:inv.customer_name|default:"Walk-in"|truncatechars:22 }}</strong>
+                                        {% if inv.customer.phone %}
+                                            <small style="color: #64748b; display: block; font-size: 0.75rem;">
+                                                <i class="bi bi-telephone"></i> {{ inv.customer.full_phone }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ inv.created_at|date:"d M Y" }}</strong>
+                                <small style="color: #94a3b8; display: block; font-size: 0.72rem;">{{ inv.created_at|date:"H:i" }}</small>
+                            </td>
+                            <td class="text-end">
+                                <span class="amount-badge">{{ currency_symbol }}{{ inv.grand_total|floatformat:2 }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if inv.payment_method == 'CASH' %}
+                                    <span class="category-chip"><i class="bi bi-cash-stack"></i> Cash</span>
+                                {% elif inv.payment_method == 'CARD' %}
+                                    <span class="category-chip"><i class="bi bi-credit-card"></i> Card</span>
+                                {% elif inv.payment_method == 'BANK' %}
+                                    <span class="category-chip"><i class="bi bi-bank"></i> Bank</span>
+                                {% else %}
+                                    <span class="category-chip"><i class="bi bi-clock-history"></i> Credit</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if inv.payment_status == 'PAID' %}
+                                    <span class="status-pill status-available"><i class="bi bi-check-circle-fill"></i> Paid</span>
+                                {% elif inv.payment_status == 'UNPAID' %}
+                                    <span class="status-pill status-out"><i class="bi bi-x-circle-fill"></i> Unpaid</span>
+                                {% else %}
+                                    <span class="status-pill status-low"><i class="bi bi-hourglass-split"></i> Partial</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="action-group">
+                                    <a href="{% url 'invoice_detail' inv.id %}" class="action-btn action-primary" title="View"><i class="bi bi-eye-fill"></i></a>
+                                    <a href="{% url 'print_invoice' inv.id %}" target="_blank" class="action-btn action-secondary" title="Print"><i class="bi bi-printer-fill"></i></a>
+                                    <a href="{% url 'download_invoice_pdf' inv.id %}" class="action-btn action-danger" title="Download PDF"><i class="bi bi-file-pdf-fill"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-receipt"></i>
+                <h5>No Invoices Yet</h5>
+                <p>Start by creating your first sales invoice.</p>
+                <a href="{% url 'create_invoice' %}" class="btn-empty-action">
+                    <i class="bi bi-plus-circle"></i> Create First Invoice
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

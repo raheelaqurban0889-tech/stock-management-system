@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Stock, Inventory & Sales Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e40af 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+        /* Decorative background circles */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.1);
+            z-index: 0;
+        }
+        body::before {
+            width: 500px;
+            height: 500px;
+            top: -200px;
+            right: -200px;
+        }
+        body::after {
+            width: 400px;
+            height: 400px;
+            bottom: -150px;
+            left: -150px;
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        /* Login Card */
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+        }
+        .login-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+            padding: 45px 40px 35px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Icon Header */
+        .logo-circle {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .logo-circle i {
+            color: #ffffff;
+            font-size: 2.5rem;
+        }
+
+        /* Titles */
+        .login-title {
+            text-align: center;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 6px;
+            line-height: 1.3;
+        }
+        .login-title span {
+            color: #3b82f6;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        /* Form Controls */
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .input-group-text {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-right: none;
+            color: #64748b;
+        }
+        .form-control {
+            border: 1px solid #e2e8f0;
+            padding: 11px 14px;
+            font-size: 0.95rem;
+            background: #f8fafc;
+            transition: all 0.2s;
+        }
+        .form-control:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .input-group:focus-within .input-group-text {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+        .input-group .form-control {
+            border-left: none;
+        }
+
+        /* Password Toggle Button */
+        .password-toggle {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-left: none;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0 14px;
+        }
+        .password-toggle:hover {
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        /* Remember/Forgot Row */
+        .form-check-input:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .form-check-label {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .forgot-link {
+            font-size: 0.85rem;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .forgot-link:hover {
+            color: #1e40af;
+            text-decoration: underline;
+        }
+
+        /* Login Button */
+        .btn-login {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            border: none;
+            color: #ffffff;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            width: 100%;
+            transition: all 0.25s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            color: #ffffff;
+        }
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        /* Error message */
+        .error-alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.87rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-top: 20px;
+        }
+        .login-footer strong {
+            color: #64748b;
+        }
+
+        /* Below-card note */
+        .below-note {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.82rem;
+            margin-top: 18px;
+        }
+        .below-note i {
+            margin-right: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card { padding: 35px 25px 25px; }
+            .login-title { font-size: 1.15rem; }
+            .logo-circle { width: 65px; height: 65px; }
+            .logo-circle i { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+<a href="{% url 'landing' %}" style="position: absolute; top: 20px; right: 30px; color: #fff; text-decoration: none;">
+    <i class="bi bi-arrow-left"></i> Back to Home
+</a>
+<div class="login-container">
+    <div class="login-card">
+
+        <!-- Logo Icon -->
+        <div class="logo-circle">
+            <i class="bi bi-box-seam"></i>
+        </div>
+
+        <!-- Project Title -->
+        <h1 class="login-title">
+            Stock, <span>Inventory</span> &amp; Sales<br>Management System
+        </h1>
+        <p class="login-subtitle">Sign in to your account to continue</p>
+
+        <!-- Error Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="error-alert">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Login Form -->
+        <form method="post" autocomplete="off">
+            {% csrf_token %}
+
+            <!-- Username -->
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-person-fill"></i>
+                    </span>
+                    <input type="text" name="username" class="form-control"
+                           placeholder="Enter your username"
+                           required autofocus autocomplete="username">
+                </div>
+            </div>
+
+            <!-- Password with Show/Hide Toggle -->
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-lock-fill"></i>
+                    </span>
+                    <input type="password" name="password" id="passwordField"
+                           class="form-control"
+                           placeholder="Enter your password"
+                           required autocomplete="current-password">
+                    <button type="button" class="password-toggle"
+                            onclick="togglePassword()"
+                            id="toggleBtn"
+                            title="Show password">
+                        <i class="bi bi-eye-fill" id="toggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remember Me + Forgot Password -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">
+                        Remember me
+                    </label>
+                </div>
+                <a href="#" class="forgot-link">Forgot password?</a>
+            </div>
+
+            <!-- Login Button -->
+            <button type="submit" class="btn-login">
+                <i class="bi bi-box-arrow-in-right"></i>
+                Login
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            <i class="bi bi-shield-lock-fill"></i>
+            Secure Authentication System
+        </div>
+    </div>
+
+    <!-- Below card note -->
+    <p class="below-note">
+        <i class="bi bi-info-circle"></i>
+        Contact administrator for account creation
+    </p>
+</div>
+
+<script>
+// ============================================================
+// PASSWORD SHOW / HIDE TOGGLE
+// ============================================================
+function togglePassword() {
+    const field = document.getElementById('passwordField');
+    const icon = document.getElementById('toggleIcon');
+    const btn = document.getElementById('toggleBtn');
+
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('bi-eye-fill');
+        icon.classList.add('bi-eye-slash-fill');
+        btn.title = 'Hide password';
+    } else {
+        field.type = 'password';
+        icon.classList.remove('bi-eye-slash-fill');
+        icon.classList.add('bi-eye-fill');
+        btn.title = 'Show password';
+    }
+}
+
+// ============================================================
+// ENTER KEY SUPPORT (Password field)
+// ============================================================
+document.getElementById('passwordField').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        this.closest('form').submit();
+    }
+});
+
+// ============================================================
+// AUTO-FOCUS USERNAME IF EMPTY
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+    const usernameField = document.querySelector('input[name="username"]');
+    if (usernameField && !usernameField.value) {
+        usernameField.focus();
+    }
+});
+</script>
+
+</body>
+</html>

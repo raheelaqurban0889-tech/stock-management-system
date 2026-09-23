@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Stock Entries{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-truck text-primary"></i>
+                Stock Entries / Purchases
+            </h2>
+            <p class="page-subtitle">Track all purchase orders received from suppliers.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'create_stock_entry' %}" class="btn-add-product">
+                <i class="bi bi-plus-circle-fill"></i> New Purchase Entry
+            </a>
+            <a href="{% url 'inventory_list' %}" class="btn-secondary-action">
+                <i class="bi bi-boxes"></i> Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Entries</p>
+                <h3 class="stat-value">{{ total_entries }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-green">
+            <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Total Value</p>
+                <h3 class="stat-value">{{ currency_symbol }}{{ total_value|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-purple">
+            <div class="stat-icon"><i class="bi bi-building"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">Suppliers</p>
+                <h3 class="stat-value">{{ total_suppliers }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="stat-content">
+                <p class="stat-label">This Month</p>
+                <h3 class="stat-value">{{ currency_symbol }}{{ this_month_value|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            Purchase Entries
+            <span class="products-count">{{ entries|length }} records</span>
+        </h5>
+        <div>
+            <a href="{% url 'suppliers' %}" class="btn-secondary-action" style="padding: 6px 14px; font-size: 0.82rem;">
+                <i class="bi bi-people"></i> Suppliers
+            </a>
+        </div>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if entries %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">Invoice #</th>
+                            <th>Supplier</th>
+                            <th style="width: 130px;">Date</th>
+                            <th style="width: 140px;" class="text-end">Total Amount</th>
+                            <th style="width: 100px;" class="text-center">Items</th>
+                            <th style="width: 130px;">Created By</th>
+                            <th style="width: 100px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td><span class="invoice-badge"><i class="bi bi-hash"></i> {{ entry.purchase_invoice_no }}</span></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="stat-icon" style="width: 36px; height: 36px; border-radius: 10px; font-size: 1rem; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff;">
+                                        <i class="bi bi-building"></i>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ entry.supplier.company_name|default:"N/A"|truncatechars:22 }}</strong>
+                                        {% if entry.supplier.contact_person %}
+                                            <small style="color: #64748b; display: block; font-size: 0.72rem;">
+                                                <i class="bi bi-person"></i> {{ entry.supplier.contact_person|truncatechars:20 }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ entry.entry_date|date:"d M Y" }}</strong>
+                                <small style="color: #94a3b8; display: block; font-size: 0.72rem;">{{ entry.created_at|date:"H:i" }}</small>
+                            </td>
+                            <td class="text-end"><span class="amount-badge">{{ currency_symbol }}{{ entry.total_amount|floatformat:2 }}</span></td>
+                            <td class="text-center">
+                                <span class="qty-badge"><i class="bi bi-box"></i> {{ entry.items.count }}</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div class="stat-icon" style="width: 26px; height: 26px; border-radius: 50%; font-size: 0.72rem; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #1e40af); color: #fff;">
+                                        {{ entry.created_by.username|first|default:"S"|upper }}
+                                    </div>
+                                    <small style="color: #475569; font-weight: 600;">{{ entry.created_by.username|default:"System"|truncatechars:12 }}</small>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="action-btn action-primary" data-bs-toggle="modal" data-bs-target="#entryModal{{ entry.id }}" title="View Details">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-truck"></i>
+                <h5>No Stock Entries Yet</h5>
+                <p>Start by creating a purchase entry from your supplier.</p>
+                <a href="{% url 'create_stock_entry' %}" class="btn-empty-action">
+                    <i class="bi bi-plus-circle"></i> New Purchase Entry
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ============================================================
+     MODALS — TABLE KE BAHAR (Yeh Zaroori Hai!)
+     ============================================================ -->
+{% for entry in entries %}
+<div class="modal fade" id="entryModal{{ entry.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-receipt text-primary"></i> 
+                    Purchase Invoice: {{ entry.purchase_invoice_no }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div style="background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+                            <small style="color: #64748b; display: block; font-size: 0.7rem; text-transform: uppercase; font-weight: 600;">Supplier</small>
+                            <strong style="color: #1e293b; font-size: 0.9rem;">{{ entry.supplier.company_name|default:"N/A" }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+                            <small style="color: #64748b; display: block; font-size: 0.7rem; text-transform: uppercase; font-weight: 600;">Date</small>
+                            <strong style="color: #1e293b; font-size: 0.9rem;">{{ entry.entry_date|date:"d M Y" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 style="margin-bottom: 10px; font-size: 0.88rem;">Items ({{ entry.items.count }})</h6>
+
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-center" style="width: 80px;">Qty</th>
+                            <th class="text-end" style="width: 110px;">Unit Cost</th>
+                            <th class="text-end" style="width: 120px;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in entry.items.all %}
+                        <tr>
+                            <td><strong>{{ item.product.name }}</strong></td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end mono">{{ currency_symbol }}{{ item.unit_cost }}</td>
+                            <td class="text-end mono"><strong>{{ currency_symbol }}{{ item.subtotal }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; border-top: 2px solid #1e293b;">
+                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                            <td class="text-end"><strong style="color: #059669; font-size: 1rem;">{{ currency_symbol }}{{ entry.total_amount }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Stock History{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-clock-history text-primary"></i>
+                Stock Movement History
+            </h2>
+            <p class="page-subtitle">Complete audit trail of all stock in and out operations.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'inventory_list' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back to Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-box-seam"></i> Product</label>
+            <select name="product" class="filter-select">
+                <option value="">All Products</option>
+                {% for p in products %}
+                    <option value="{{ p.id }}" {% if product_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label"><i class="bi bi-arrow-left-right"></i> Movement Type</label>
+            <select name="type" class="filter-select">
+                <option value="">All Types</option>
+                <option value="IN" {% if movement_type == 'IN' %}selected{% endif %}>Stock In</option>
+                <option value="OUT" {% if movement_type == 'OUT' %}selected{% endif %}>Stock Out</option>
+                <option value="ADJUST" {% if movement_type == 'ADJUST' %}selected{% endif %}>Adjustment</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter-apply"><i class="bi bi-funnel-fill"></i> Apply</button>
+            <a href="{% url 'stock_history' %}" class="btn-filter-reset"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="products-card">
+    <div class="products-card-header">
+        <h5 class="products-card-title">
+            <i class="bi bi-list-ul"></i>
+            Movement Log
+            <span class="products-count">{{ movements|length }} records</span>
+        </h5>
+    </div>
+
+    <div class="products-card-body p-0">
+        {% if movements %}
+            <div class="table-responsive">
+                <table class="modern-inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">Date & Time</th>
+                            <th>Product</th>
+                            <th style="width: 120px;" class="text-center">Type</th>
+                            <th style="width: 100px;" class="text-center">Change</th>
+                            <th style="width: 90px;" class="text-center">Before</th>
+                            <th style="width: 90px;" class="text-center">After</th>
+                            <th style="width: 160px;">Reference</th>
+                            <th style="width: 110px;">By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in movements %}
+                        <tr>
+                            <td>
+                                <strong style="color: #1e293b; font-size: 0.85rem;">{{ m.created_at|date:"d M Y" }}</strong>
+                                <small style="color: #94a3b8; display: block; font-size: 0.72rem;">{{ m.created_at|date:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="stat-icon" style="width: 36px; height: 36px; border-radius: 10px; font-size: 1rem; background: #eff6ff; color: #3b82f6;">
+                                        <i class="bi bi-box-seam"></i>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #1e293b;">{{ m.product.name|truncatechars:25 }}</strong>
+                                        {% if m.product.sku %}
+                                            <small style="color: #64748b; display: block; font-family: monospace; font-size: 0.72rem;">{{ m.product.sku }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if m.movement_type == 'IN' %}
+                                    <span class="status-pill status-available"><i class="bi bi-arrow-down"></i> IN</span>
+                                {% elif m.movement_type == 'OUT' %}
+                                    <span class="status-pill status-out"><i class="bi bi-arrow-up"></i> OUT</span>
+                                {% else %}
+                                    <span class="status-pill" style="background: #f5f3ff; color: #7c3aed;"><i class="bi bi-arrow-repeat"></i> ADJ</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if m.quantity > 0 %}
+                                    <span class="amount-badge" style="font-size: 0.85rem;">+{{ m.quantity }}</span>
+                                {% else %}
+                                    <span class="status-pill status-out" style="font-size: 0.85rem; font-family: monospace;">{{ m.quantity }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center"><span style="font-family: monospace; color: #94a3b8; font-weight: 600;">{{ m.quantity_before }}</span></td>
+                            <td class="text-center"><strong style="font-family: monospace; color: #1e293b;">{{ m.quantity_after }}</strong></td>
+                            <td>
+                                {% if m.reference %}
+                                    <span class="invoice-badge"><i class="bi bi-hash"></i> {{ m.reference|truncatechars:18 }}</span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="stat-icon" style="width: 28px; height: 28px; border-radius: 50%; font-size: 0.75rem; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #1e40af); color: #fff;">
+                                        {{ m.created_by.username|first|default:"S"|upper }}
+                                    </div>
+                                    <small style="color: #475569; font-weight: 600;">{{ m.created_by.username|default:"System"|truncatechars:10 }}</small>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-inventory">
+                <i class="bi bi-clock-history"></i>
+                <h5>No Stock Movements Yet</h5>
+                <p>Stock movements will appear here when products are added, sold, or returned.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
