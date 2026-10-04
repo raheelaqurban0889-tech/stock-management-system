@@ -144,27 +144,28 @@
     <h2>{{ product.name }}</h2>
 
     <p><strong>SKU:</strong> {{ product.sku|default:"—" }}</p>
-    <p><strong>Price:</strong> ${{ product.price }}</p>
+    <p><strong>Price:</strong> ₨{{ product.price }}</p>
     <p><strong>Category:</strong> {{ product.category.name|default:"Uncategorized" }}</p>
 
     <div class="divider"></div>
 
     {% if product.barcode %}
-        <!-- Barcode Image -->
-        <img src="{% url 'product_barcode' product.id %}" 
-             alt="Barcode"
-             class="barcode-img"
-             onerror="this.style.display='none'; document.getElementById('bc-error').style.display='block';">
+        <!-- Barcode Image — Use image field directly -->
+        {% if product.barcode_image %}
+            <img src="{{ product.barcode_image.url }}" 
+                 alt="Barcode"
+                 class="barcode-img">
+        {% else %}
+            <div class="barcode-missing">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Barcode image not generated.<br>
+                <a href="{% url 'regenerate_barcode_qr' product.id %}" style="color: #dc2626;">
+                    Click here to regenerate
+                </a>
+            </div>
+        {% endif %}
 
         <div class="barcode-text">{{ product.barcode }}</div>
-
-        <div id="bc-error" class="barcode-missing" style="display: none;">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            Barcode image could not be loaded.<br>
-            <a href="{% url 'regenerate_barcode_qr' product.id %}" style="color: #dc2626;">
-                Click here to regenerate
-            </a>
-        </div>
     {% else %}
         <div class="barcode-missing">
             <i class="bi bi-exclamation-triangle-fill"></i>
@@ -181,10 +182,16 @@
 
     {% if product.qr_code %}
         <div class="divider"></div>
-        <img src="{% url 'product_qr' product.id %}" 
+        <img src="{{ product.qr_code.url }}" 
              alt="QR Code"
              class="qr-img">
         <p style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Scan for details</p>
+    {% else %}
+        <div class="divider"></div>
+        <div class="barcode-missing">
+            <i class="bi bi-qr-code"></i>
+            QR code not generated.
+        </div>
     {% endif %}
 </div>
 

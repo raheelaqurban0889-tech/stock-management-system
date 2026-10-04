@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from decimal import Decimal
 
-
 # ============================================================
 # SETTINGS (Global Configuration)
 # ============================================================
@@ -426,3 +425,35 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
+        # ============================================================
+# SCAN LOG (Track barcode/QR scans)
+# ============================================================
+class ScanLog(models.Model):
+    SCAN_TYPES = (
+        ('BARCODE', 'Barcode'),
+        ('QR', 'QR Code'),
+    )
+    STATUS_CHOICES = (
+        ('FOUND', 'Product Found'),
+        ('NOT_FOUND', 'Product Not Found'),
+    )
+
+    scanned_code = models.CharField(max_length=255, db_index=True)
+    scan_type = models.CharField(max_length=10, choices=SCAN_TYPES, default='BARCODE')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='NOT_FOUND')
+    product = models.ForeignKey(
+        Product, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='scan_logs'
+    )
+    scanned_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    scanned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-scanned_at']
+        verbose_name = "Scan Log"
+        verbose_name_plural = "Scan Logs"
+
+    def __str__(self):
+        return f"{self.scanned_code} - {self.status}"

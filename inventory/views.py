@@ -10,6 +10,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
+import random
 
 from .models import *
 from .forms import *
@@ -95,7 +96,7 @@ def dashboard(request):
     chart_labels = []
     chart_data = []
     for i in range(5, -1, -1):
-        month_date = (today.replace(day=1) - timedelta(days=i*30))
+        month_date = (today.replace(day=1) - timedelta(days=i * 30))
         month_total = Invoice.objects.filter(
             created_at__year=month_date.year,
             created_at__month=month_date.month
@@ -675,9 +676,6 @@ def create_invoice(request):
         quantities = request.POST.getlist('quantity[]')
         prices = request.POST.getlist('price[]')
 
-        # ============================================================
-        # STOCK VALIDATION
-        # ============================================================
         stock_errors = []
         if product_ids:
             for i in range(len(product_ids)):
@@ -689,9 +687,6 @@ def create_invoice(request):
                             f"Only {product.quantity} units of '{product.name}' available."
                         )
 
-        # ============================================================
-        # IF STOCK ERROR → PRESERVE FORM DATA
-        # ============================================================
         if stock_errors:
             for err in stock_errors:
                 messages.error(request, err)
@@ -722,9 +717,6 @@ def create_invoice(request):
                 },
             })
 
-        # ============================================================
-        # NO ERRORS → CREATE INVOICE
-        # ============================================================
         if not product_ids:
             messages.error(request, 'Please add at least one product')
             return redirect('create_invoice')
@@ -775,7 +767,6 @@ def create_invoice(request):
                 invoice.calculate_totals()
                 invoice.save()
 
-                # Low stock notification
                 for product in Product.objects.filter(quantity__lte=F('low_stock_threshold'), quantity__gt=0):
                     if not Notification.objects.filter(user=request.user, title__icontains=product.name, is_read=False).exists():
                         Notification.objects.create(
@@ -803,6 +794,7 @@ def create_invoice(request):
         'customers': Customer.objects.all(),
         'products': Product.objects.filter(quantity__gt=0),
     })
+
 
 @login_required
 def invoice_detail(request, invoice_id):
@@ -866,9 +858,12 @@ def download_invoice_pdf(request, invoice_id):
             y -= 15
 
         y -= 20
-        p.drawString(370, y, f"Subtotal: {Settings.get_currency_symbol()}{invoice.subtotal}"); y -= 15
-        p.drawString(370, y, f"Discount: {Settings.get_currency_symbol()}{invoice.discount}"); y -= 15
-        p.drawString(370, y, f"{invoice.tax_name}: {Settings.get_currency_symbol()}{invoice.tax}"); y -= 15
+        p.drawString(370, y, f"Subtotal: {Settings.get_currency_symbol()}{invoice.subtotal}")
+        y -= 15
+        p.drawString(370, y, f"Discount: {Settings.get_currency_symbol()}{invoice.discount}")
+        y -= 15
+        p.drawString(370, y, f"{invoice.tax_name}: {Settings.get_currency_symbol()}{invoice.tax}")
+        y -= 15
         p.setFont("Helvetica-Bold", 12)
         p.drawString(370, y, f"Grand Total: {Settings.get_currency_symbol()}{invoice.grand_total}")
 
@@ -976,6 +971,8 @@ def create_stock_entry(request):
         'products': Product.objects.all(),
         'currency_symbol': Settings.get_currency_symbol(),
     })
+
+
 # ============================================================
 # RETURNS
 # ============================================================
@@ -1116,12 +1113,11 @@ def reports(request):
         invoices__created_at__range=[start, end]
     ).order_by('-total')[:5]
 
-    # Chart data
     chart_labels = []
     chart_data = []
     profit_data = []
     for i in range(5, -1, -1):
-        month_date = (today.replace(day=1) - timedelta(days=i*30))
+        month_date = (today.replace(day=1) - timedelta(days=i * 30))
         month_start = month_date.replace(day=1)
         next_month = (month_start + timedelta(days=32)).replace(day=1)
 
@@ -1394,35 +1390,42 @@ def print_barcode_labels(request, product_id):
     })
 
 
+# ============================================================
+# SCAN BARCODE / QR (with optional ScanLog tracking)
+# ============================================================
+
 @login_required
 def scan_barcode(request):
     product = None
     error = None
     scanned_code = None
-    scanned_type = None  # 'barcode' or 'qr'
+    scanned_type = None
     qr_data = None
+
+    total_scans = 0
+    today_scans = 0
+    found_count = 0
+    not_found_count = 0
 
     if request.method == 'POST':
         barcode_value = request.POST.get('barcode', '').strip()
-        
+
         if barcode_value:
             scanned_code = barcode_value
             scanned_type = 'barcode'
-            
+
             # Try to find by barcode OR sku
             product = Product.objects.filter(
                 Q(barcode=barcode_value) | Q(sku=barcode_value)
             ).first()
-            
-            # If not found by barcode/sku, try QR code JSON data
+
+            # If not found, try QR JSON data
             if not product and barcode_value.startswith('{'):
                 try:
-                    import json as json_lib
-                    qr_data_parsed = json_lib.loads(barcode_value)
+                    qr_data_parsed = json.loads(barcode_value)
                     scanned_type = 'qr'
                     qr_data = qr_data_parsed
-                    
-                    # Try find by ID, SKU, or barcode from QR data
+
                     product = Product.objects.filter(
                         Q(id=qr_data_parsed.get('id')) |
                         Q(sku=qr_data_parsed.get('sku')) |
@@ -1430,11 +1433,35 @@ def scan_barcode(request):
                     ).first()
                 except (ValueError, TypeError):
                     pass
-            
+
+            # Try to save ScanLog (safe — if model exists)
+            try:
+                if 'ScanLog' in globals():
+                    ScanLog.objects.create(
+                        scanned_code=barcode_value[:255],
+                        scan_type='QR' if scanned_type == 'qr' else 'BARCODE',
+                        status='FOUND' if product else 'NOT_FOUND',
+                        product=product,
+                        scanned_by=request.user,
+                    )
+            except Exception as e:
+                print(f"ScanLog save skipped: {e}")
+
             if not product:
                 error = f"No product found with code: {barcode_value}"
         else:
             error = "Please enter a barcode."
+
+    # Try to fetch stats (safe — if ScanLog not available, keep 0)
+    try:
+        if 'ScanLog' in globals():
+            today = timezone.now().date()
+            total_scans = ScanLog.objects.count()
+            today_scans = ScanLog.objects.filter(scanned_at__date=today, status='FOUND').count()
+            found_count = ScanLog.objects.filter(status='FOUND').count()
+            not_found_count = ScanLog.objects.filter(status='NOT_FOUND').count()
+    except Exception as e:
+        print(f"ScanLog stats skipped: {e}")
 
     return render(request, 'scan_barcode.html', {
         'product': product,
@@ -1443,7 +1470,13 @@ def scan_barcode(request):
         'scanned_type': scanned_type,
         'qr_data': qr_data,
         'currency_symbol': Settings.get_currency_symbol(),
+        'total_scans': total_scans,
+        'today_scans': today_scans,
+        'found_count': found_count,
+        'not_found_count': not_found_count,
     })
+
+
 @login_required
 def regenerate_barcode_qr(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -1452,11 +1485,15 @@ def regenerate_barcode_qr(request, product_id):
     else:
         messages.error(request, 'Failed to regenerate barcode/QR')
     return redirect('edit_inventory', product_id=product.id)
+
+
 @login_required
 def notifications_count(request):
     """Returns count of unread notifications for polling."""
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({'count': count})
+
+
 # ============================================================
 # ADD PRODUCT FROM SCAN
 # ============================================================
@@ -1467,8 +1504,6 @@ def add_product_from_scan(request):
     """
     Pre-fill product form with scanned barcode/QR data.
     """
-    from .barcode_utils import generate_barcode_for_product
-
     # Get scanned code from URL params
     scanned_barcode = request.GET.get('barcode', '').strip()
     scanned_sku = request.GET.get('sku', '').strip()
@@ -1481,8 +1516,7 @@ def add_product_from_scan(request):
     qr_info = {}
     if scanned_qr_data:
         try:
-            import json as json_lib
-            qr_info = json_lib.loads(scanned_qr_data)
+            qr_info = json.loads(scanned_qr_data)
         except (ValueError, TypeError):
             qr_info = {}
 
@@ -1526,7 +1560,6 @@ def add_product_from_scan(request):
 
                 # Auto-generate barcode if not provided
                 if not product.barcode:
-                    import random
                     while True:
                         candidate = ''.join([str(random.randint(0, 9)) for _ in range(13)])
                         if not Product.objects.filter(barcode=candidate).exists():
