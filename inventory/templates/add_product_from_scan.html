@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Add Product from Scan{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-{% if scan_source == 'qr' %}qr-code{% else %}upc-scan{% endif %} text-primary"></i>
+                Add Product from {% if scan_source == 'qr' %}QR Code{% else %}Barcode{% endif %}
+            </h2>
+            <p class="page-subtitle">
+                Scanned code has been pre-filled. Complete the details below.
+            </p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'scan_barcode' %}" class="btn-secondary-action">
+                <i class="bi bi-arrow-left"></i> Back to Scanner
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Scanned Code Info Banner -->
+<div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #10b981; border-radius: 14px; padding: 18px 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px;">
+    <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #10b981, #047857); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.6rem; flex-shrink: 0; box-shadow: 0 8px 20px rgba(16,185,129,0.4);">
+        <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div style="flex: 1;">
+        <small style="display: block; font-size: 0.72rem; color: #047857; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">
+            Scanned Successfully
+        </small>
+        {% if scanned_barcode %}
+            <strong style="display: block; color: #1e293b; font-family: 'Courier New', monospace; font-size: 0.95rem; word-break: break-all;">
+                <i class="bi bi-upc"></i> Barcode: {{ scanned_barcode }}
+            </strong>
+        {% endif %}
+        {% if scanned_sku %}
+            <strong style="display: block; color: #1e293b; font-family: 'Courier New', monospace; font-size: 0.9rem;">
+                <i class="bi bi-tag"></i> SKU: {{ scanned_sku }}
+            </strong>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-3">
+
+        <div class="col-lg-8">
+            <div class="form-card mb-3">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-info-circle-fill text-primary"></i> Basic Information</h5>
+                </div>
+                <div class="form-card-body">
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-tag-fill"></i> Product Name <span class="required">*</span></label>
+                        {{ form.name }}
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-upc"></i> SKU Code</label>
+                                {{ form.sku }}
+                                <small class="form-hint"><i class="bi bi-check-circle" style="color: #10b981;"></i> Pre-filled from scan</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-upc-scan"></i> Barcode</label>
+                                {{ form.barcode }}
+                                <small class="form-hint"><i class="bi bi-check-circle" style="color: #10b981;"></i> Pre-filled from scan</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-tags-fill"></i> Category</label>
+                                {{ form.category }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-building"></i> Supplier</label>
+                                {{ form.supplier }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-file-text"></i> Description</label>
+                        {{ form.description }}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-currency-dollar text-success"></i> Pricing & Stock</h5>
+                </div>
+                <div class="form-card-body">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-cart-plus"></i> Purchase Price</label>
+                                <input type="number" name="purchase_price" class="form-input-custom" step="0.01" value="{{ form.purchase_price.value|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-tag-fill"></i> Selling Price <span class="required">*</span></label>
+                                <input type="number" name="price" class="form-input-custom" step="0.01" value="{{ form.price.value|default:0 }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-box-seam"></i> Initial Quantity <span class="required">*</span></label>
+                                <input type="number" name="quantity" class="form-input-custom" value="{{ form.quantity.value|default:0 }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom"><i class="bi bi-exclamation-triangle-fill"></i> Low Stock Threshold</label>
+                                <input type="number" name="low_stock_threshold" class="form-input-custom" value="{{ form.low_stock_threshold.value|default:10 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label class="form-label-custom"><i class="bi bi-rulers"></i> Unit</label>
+                        <input type="text" name="unit" class="form-input-custom" value="{{ form.unit.value|default:'Piece' }}">
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="form-card mb-3">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-image-fill text-primary"></i> Product Image</h5>
+                </div>
+                <div class="form-card-body">
+                    <div id="imageZone" style="position: relative; width: 100%; aspect-ratio: 1; max-height: 280px; border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; overflow: hidden;">
+                        <div id="imagePlaceholder" style="text-align: center; color: #64748b; padding: 20px;">
+                            <i class="bi bi-cloud-arrow-up-fill" style="font-size: 3rem; color: #3b82f6; display: block; margin-bottom: 10px; opacity: 0.6;"></i>
+                            <p style="margin: 0 0 4px; font-weight: 700; color: #1e293b; font-size: 0.95rem;">Click to upload</p>
+                            <small style="font-size: 0.75rem; color: #94a3b8;">PNG, JPG up to 5MB</small>
+                        </div>
+                        <img src="" alt="" id="imagePreview" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <input type="file" name="image" id="imageInput" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="bi bi-check2-square text-primary"></i> Save Product</h5>
+                </div>
+                <div class="form-card-body">
+                    <button type="submit" class="btn-save" style="width: 100%; justify-content: center; padding: 14px; margin-bottom: 10px; background: linear-gradient(135deg, #10b981, #047857);">
+                        <i class="bi bi-check-circle-fill"></i> Add Product
+                    </button>
+                    <a href="{% url 'scan_barcode' %}" class="btn-cancel" style="width: 100%; justify-content: center;">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const zone = document.getElementById('imageZone');
+    const fileInput = document.getElementById('imageInput');
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('imagePlaceholder');
+
+    if (zone && fileInput) {
+        zone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.src = ev.target.result;
+                    preview.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

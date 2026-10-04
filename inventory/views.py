@@ -1398,23 +1398,52 @@ def print_barcode_labels(request, product_id):
 def scan_barcode(request):
     product = None
     error = None
+    scanned_code = None
+    scanned_type = None  # 'barcode' or 'qr'
+    qr_data = None
 
     if request.method == 'POST':
         barcode_value = request.POST.get('barcode', '').strip()
+        
         if barcode_value:
-            product = Product.objects.filter(Q(barcode=barcode_value) | Q(sku=barcode_value)).first()
+            scanned_code = barcode_value
+            scanned_type = 'barcode'
+            
+            # Try to find by barcode OR sku
+            product = Product.objects.filter(
+                Q(barcode=barcode_value) | Q(sku=barcode_value)
+            ).first()
+            
+            # If not found by barcode/sku, try QR code JSON data
+            if not product and barcode_value.startswith('{'):
+                try:
+                    import json as json_lib
+                    qr_data_parsed = json_lib.loads(barcode_value)
+                    scanned_type = 'qr'
+                    qr_data = qr_data_parsed
+                    
+                    # Try find by ID, SKU, or barcode from QR data
+                    product = Product.objects.filter(
+                        Q(id=qr_data_parsed.get('id')) |
+                        Q(sku=qr_data_parsed.get('sku')) |
+                        Q(barcode=qr_data_parsed.get('barcode'))
+                    ).first()
+                except (ValueError, TypeError):
+                    pass
+            
             if not product:
-                error = f"No product found with barcode/SKU: {barcode_value}"
+                error = f"No product found with code: {barcode_value}"
         else:
             error = "Please enter a barcode."
 
     return render(request, 'scan_barcode.html', {
         'product': product,
         'error': error,
+        'scanned_code': scanned_code,
+        'scanned_type': scanned_type,
+        'qr_data': qr_data,
         'currency_symbol': Settings.get_currency_symbol(),
     })
-
-
 @login_required
 def regenerate_barcode_qr(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -1428,3 +1457,136 @@ def notifications_count(request):
     """Returns count of unread notifications for polling."""
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({'count': count})
+# ============================================================
+# ADD PRODUCT FROM SCAN
+# ============================================================
+
+@login_required
+@role_required(['Admin', 'Manager'])
+def add_product_from_scan(request):
+    """
+    Pre-fill product form with scanned barcode/QR data.
+    """
+    from .barcode_utils import generate_barcode_for_product
+
+    # Get scanned code from URL params
+    scanned_barcode = request.GET.get('barcode', '').strip()
+    scanned_sku = request.GET.get('sku', '').strip()
+    scanned_name = request.GET.get('name', '').strip()
+    scanned_price = request.GET.get('price', '').strip()
+    scanned_qr_data = request.GET.get('qr_data', '').strip()
+    scan_source = request.GET.get('source', 'barcode')  # barcode or qr
+
+    # If QR data provided, parse it
+    qr_info = {}
+    if scanned_qr_data:
+        try:
+            import json as json_lib
+            qr_info = json_lib.loads(scanned_qr_data)
+        except (ValueError, TypeError):
+            qr_info = {}
+
+    initial_data = {}
+
+    # Pre-fill from barcode scan
+    if scanned_barcode:
+        initial_data['barcode'] = scanned_barcode
+
+    # Pre-fill from SKU scan
+    if scanned_sku:
+        initial_data['sku'] = scanned_sku
+
+    # Pre-fill from QR data
+    if qr_info:
+        if qr_info.get('name') and not scanned_name:
+            scanned_name = qr_info.get('name', '')
+        if qr_info.get('sku') and not scanned_sku:
+            initial_data['sku'] = qr_info.get('sku')
+        if qr_info.get('barcode') and not scanned_barcode:
+            initial_data['barcode'] = qr_info.get('barcode')
+        if qr_info.get('price') and not scanned_price:
+            try:
+                initial_data['price'] = float(qr_info.get('price'))
+            except (ValueError, TypeError):
+                pass
+
+    # Handle form submission
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            with transaction.atomic():
+                product = form.save(commit=False)
+
+                # Auto-generate SKU if not provided
+                if not product.sku:
+                    today = timezone.now().strftime('%Y%m%d')
+                    last = Product.objects.order_by('-id').first()
+                    next_id = (last.id + 1) if last else 1
+                    product.sku = f"SKU-{today}-{next_id:04d}"
+
+                # Auto-generate barcode if not provided
+                if not product.barcode:
+                    import random
+                    while True:
+                        candidate = ''.join([str(random.randint(0, 9)) for _ in range(13)])
+                        if not Product.objects.filter(barcode=candidate).exists():
+                            product.barcode = candidate
+                            break
+
+                product.save()
+
+                # Generate barcode & QR images
+                try:
+                    generate_barcode_for_product(product)
+                except Exception as e:
+                    print(f"Barcode/QR generation error: {e}")
+
+                # Record initial stock movement
+                if product.quantity > 0:
+                    StockMovement.objects.create(
+                        product=product,
+                        quantity=product.quantity,
+                        movement_type='IN',
+                        quantity_before=0,
+                        quantity_after=product.quantity,
+                        reference='Scanned Product Entry',
+                        note=f'Added via {scan_source} scan',
+                        created_by=request.user
+                    )
+
+                # Activity log
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action=f'Added product via scan: {product.name} ({scan_source})',
+                    module='Inventory',
+                    ip_address=get_client_ip(request)
+                )
+
+            messages.success(
+                request,
+                f'✅ Product "{product.name}" added successfully via scan! '
+                f'Barcode: {product.barcode}'
+            )
+            return redirect('inventory_list')
+    else:
+        # GET request — pre-fill form
+        initial_data['name'] = scanned_name
+        if scanned_price:
+            try:
+                initial_data['price'] = float(scanned_price)
+            except (ValueError, TypeError):
+                pass
+
+        form = ProductForm(initial=initial_data)
+
+    context = {
+        'form': form,
+        'scan_source': scan_source,
+        'scanned_barcode': scanned_barcode,
+        'scanned_sku': scanned_sku,
+        'scanned_name': scanned_name,
+        'scanned_qr_data': scanned_qr_data,
+        'qr_info': qr_info,
+        'currency_symbol': Settings.get_currency_symbol(),
+    }
+    return render(request, 'add_product_from_scan.html', context)

@@ -3,6 +3,10 @@ from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
+        # ============================================================
+    # ADD PRODUCT FROM SCAN
+    # ============================================================
+    path('scan/add-product/', views.add_product_from_scan, name='add_product_from_scan'),
     # ============================================================
     # LANDING PAGE
     # ============================================================
